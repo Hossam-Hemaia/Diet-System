@@ -4,6 +4,7 @@ const PdfDoc = require("pdfkit-table");
 const nodemailer = require("nodemailer");
 const Client = require("../models/client");
 const Bundle = require("../models/bundle");
+const Subscription = require("../models/subscription");
 const { nextTick } = require("process");
 
 const singleDay = 1000 * 60 * 60 * 24;
@@ -236,81 +237,91 @@ exports.getChiffSelectedMenu = (
 };
 
 exports.activeClientsReport = async (clients) => {
-  const reportName = `clients-report-${Date.now()}.pdf`;
-  const reportPath = path.join("data", reportName);
-  const arFont = path.join("public", "fonts", "Janna.ttf");
-  const headerImg = path.join("public", "img", "headerSmall.png");
-  const date = new Date().toDateString();
-  const clientsTable = {
-    headers: [
-      {
-        label: this.textDirection("الايام  المتبقيه"),
-        width: 90,
-        align: "center",
-        headerColor: "gray",
+  try {
+    const reportName = `clients-report-${Date.now()}.pdf`;
+    const reportPath = path.join("data", reportName);
+    const arFont = path.join("public", "fonts", "Janna.ttf");
+    const headerImg = path.join("public", "img", "headerSmall.png");
+    const date = new Date().toDateString();
+    const clientsTable = {
+      headers: [
+        {
+          label: this.textDirection("اطعمه محظوره"),
+          width: 90,
+          align: "center",
+          headerColor: "gray",
+        },
+        {
+          label: this.textDirection("الايام  المتبقيه"),
+          width: 70,
+          align: "center",
+          headerColor: "gray",
+        },
+        {
+          label: this.textDirection("نهاية  الاشتراك"),
+          width: 90,
+          align: "center",
+          headerColor: "gray",
+        },
+        {
+          label: this.textDirection("بداية  الاشتراك"),
+          width: 90,
+          align: "center",
+          headerColor: "gray",
+        },
+        {
+          label: this.textDirection("عدد  الاسناكات"),
+          width: 70,
+          align: "center",
+          headerColor: "gray",
+        },
+        {
+          label: this.textDirection("عدد  الوجبات"),
+          width: 70,
+          align: "center",
+          headerColor: "gray",
+        },
+        {
+          label: this.textDirection("القيمه  الغذائيه"),
+          width: 90,
+          align: "center",
+          headerColor: "gray",
+        },
+        { label: "الباقه", width: 70, align: "center", headerColor: "gray" },
+        { label: "الهاتف", width: 70, align: "center", headerColor: "gray" },
+        { label: "الاسم", width: 90, align: "center", headerColor: "gray" },
+        {
+          label: "م",
+          width: 30,
+          align: "center",
+          headerColor: "gray",
+          columnColor: "gray",
+        },
+      ],
+      rows: clients,
+    };
+    const Doc = new PdfDoc({ size: "A4", margin: 2, layout: "landscape" });
+    Doc.pipe(fs.createWriteStream(reportPath));
+    Doc.image(headerImg, {
+      height: 120,
+      align: "center",
+    });
+    Doc.font(arFont).fontSize(16).text(`${date} : التاريخ`, { align: "right" });
+    Doc.font(arFont)
+      .fontSize(18)
+      .text(this.textDirection(`تقرير العملاء النشطين`), { align: "center" });
+    await Doc.table(clientsTable, {
+      prepareHeader: () => Doc.font(arFont).fontSize(11),
+      prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+        Doc.font(arFont).fontSize(11);
+        indexColumn === 0 && Doc.addBackground(rectRow, "white", 0.15);
       },
-      {
-        label: this.textDirection("نهاية  الاشتراك"),
-        width: 90,
-        align: "center",
-        headerColor: "gray",
-      },
-      {
-        label: this.textDirection("بداية  الاشتراك"),
-        width: 90,
-        align: "center",
-        headerColor: "gray",
-      },
-      {
-        label: this.textDirection("عدد  الاسناكات"),
-        width: 90,
-        align: "center",
-        headerColor: "gray",
-      },
-      {
-        label: this.textDirection("عدد  الوجبات"),
-        width: 90,
-        align: "center",
-        headerColor: "gray",
-      },
-      {
-        label: this.textDirection("القيمه  الغذائيه"),
-        width: 90,
-        align: "center",
-        headerColor: "gray",
-      },
-      { label: "الباقه", width: 70, align: "center", headerColor: "gray" },
-      { label: "الهاتف", width: 90, align: "center", headerColor: "gray" },
-      { label: "الاسم", width: 90, align: "center", headerColor: "gray" },
-      {
-        label: "مسلسل",
-        width: 50,
-        align: "center",
-        headerColor: "gray",
-        columnColor: "gray",
-      },
-    ],
-    rows: clients,
-  };
-  const Doc = new PdfDoc({ size: "A4", margin: 2, layout: "landscape" });
-  Doc.pipe(fs.createWriteStream(reportPath));
-  Doc.image(headerImg, {
-    height: 120,
-    align: "center",
-  });
-  Doc.font(arFont).fontSize(16).text(`${date} : التاريخ`, { align: "right" });
-  Doc.font(arFont)
-    .fontSize(18)
-    .text(this.textDirection(`تقرير العملاء النشطين`), { align: "center" });
-  await Doc.table(clientsTable, {
-    prepareHeader: () => Doc.font(arFont).fontSize(12),
-    prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-      Doc.font(arFont).fontSize(12);
-      indexColumn === 0 && Doc.addBackground(rectRow, "white", 0.15);
-    },
-  });
-  Doc.end();
-  return reportName;
+    });
+    Doc.end();
+    return reportName;
+  } catch (err) {
+    throw new Error(err);
+  }
 };
 
 exports.getLocalDate = (date) => {
@@ -319,6 +330,35 @@ exports.getLocalDate = (date) => {
     newDate.getTime() - newDate.getTimezoneOffset() * 60000
   );
   return localDate;
+};
+
+exports.updateCurrentSubscriptionBundle = async () => {
+  try {
+    console.log("updating subscribed bundle...");
+    const clients = await Client.find();
+    for (let client of clients) {
+      if (client.subscriped) {
+        const currentDate = new Date();
+        const futureDate = this.getFutureDate(currentDate, 48);
+        const subscription = await Subscription.findOne({
+          clientId: client._id,
+          endingDate: { $gte: futureDate },
+        });
+        if (
+          subscription &&
+          subscription.bundleId.toString() !==
+            client.subscripedBundle.bundleId.toString()
+        ) {
+          client.subscripedBundle.bundleId = subscription.bundleId;
+          client.subscripedBundle.startingDate = subscription.startingDate;
+          client.subscripedBundle.endingDate = subscription.endingDate;
+          await client.save();
+        }
+      }
+    }
+  } catch (err) {
+    throw new Error(err);
+  }
 };
 
 exports.updateSubscriptionState = async () => {
@@ -344,5 +384,15 @@ exports.createCustomBundle = async (bundleData) => {
     return bundle;
   } catch (err) {
     next(err);
+  }
+};
+
+exports.getFutureDate = (date, hours) => {
+  try {
+    const nowDate = new Date(date);
+    const futureDate = new Date(nowDate.getTime() + hours * 60 * 60 * 1000);
+    return futureDate;
+  } catch (err) {
+    throw new Error(err);
   }
 };

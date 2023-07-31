@@ -55,7 +55,11 @@ cron.schedule("1 0 * * *", async () => {
   await clientController.addChiffMeals(currentDate);
 });
 
-cron.schedule("1 0 * * *", async () => {
+cron.schedule("2 0 * * *", async () => {
+  await utilities.updateCurrentSubscriptionBundle();
+});
+
+cron.schedule("3 0 * * *", async () => {
   await utilities.updateSubscriptionState();
 });
 

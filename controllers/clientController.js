@@ -52,13 +52,15 @@ exports.putEditClient = async (req, res, next) => {
 //////////////////Payment Method Section//////////////////
 exports.createNewCharge = async (req, res, next) => {
   const bundleId = req.query.bundleId;
-  const startingAt = req.query.startingAt;
+  let startingAt = req.query.startingAt;
   try {
     const client = await Client.findById(req.clientId);
-    let bundle = await Bundle.findById(bundleId);
-    if (!bundle) {
-      bundle = await BundleEn.findById(bundleId);
+    if (client.subscriped && startingAt === "") {
+      const lastPlanDate =
+        client.mealsPlan.meals[client.mealsPlan.meals.length - 1].date;
+      startingAt = utilities.getFutureDate(lastPlanDate, 24);
     }
+    const bundle = await Bundle.findById(bundleId);
     const amount = bundle.bundlePrice;
     const transaction = new Transaction({
       clientId: client._id,
@@ -162,20 +164,18 @@ exports.postSubscripe = async (req, res, next) => {
       } else if (bundle.bundlePeriod === 4) {
         endDate = utilities.getEndDate(startDate, 4, bundle.bundleOffer);
       }
-      let nowStart = new Date(startDate);
-      let localStartDate = new Date(
-        nowStart.getTime() - nowStart.getTimezoneOffset() * 60000
-      );
-      let nowEnd = new Date(endDate);
-      let localEndDate = new Date(
-        nowEnd.getTime() - nowEnd.getTimezoneOffset() * 60000
-      );
-      client.subscripedBundle = {
-        bundleId: bundle._id,
-        startingDate: localStartDate,
-        endingDate: localEndDate,
-        isPaid: true,
-      };
+      if (!renewFlag) {
+        let nowStart = new Date(startDate);
+        let localStartDate = utilities.getLocalDate(nowStart);
+        let nowEnd = new Date(endDate);
+        let localEndDate = utilities.getLocalDate(nowEnd);
+        client.subscripedBundle = {
+          bundleId: bundle._id,
+          startingDate: localStartDate,
+          endingDate: localEndDate,
+          isPaid: true,
+        };
+      }
       const dates = utilities.fridayFilter(
         startDate,
         endDate,
@@ -218,10 +218,18 @@ exports.postSelectMeal = async (req, res, next) => {
   const dateId = req.body.dateId;
   const flag = req.body.flag;
   try {
+    const currentDate = new Date();
+    const futureDate = utilities.getFutureDate(currentDate, 48);
     const client = await Client.findById(req.clientId);
     const clientPlan = await Subscription.findOne({
       clientId: ObjectId(req.clientId),
-    }).sort({ _id: -1 });
+      endingDate: { $gte: futureDate },
+    });
+    if (!clientPlan) {
+      const error = new Error("Not subscriped to any package!");
+      error.statusCode = 404;
+      throw error;
+    }
     const bundleId = clientPlan.bundleId.toString();
     let bundle = await Bundle.findById(bundleId);
     if (flag === "edit") {
@@ -409,9 +417,17 @@ exports.addChiffMeals = async (date) => {
 
 exports.getClientPlanDetails = async (req, res, next) => {
   try {
+    const currentDate = new Date();
+    const futureDate = utilities.getFutureDate(currentDate, 48);
     const clientPlan = await Subscription.findOne({
       clientId: ObjectId(req.clientId),
-    }).sort({ _id: -1 });
+      endingDate: { $gte: futureDate },
+    });
+    if (!clientPlan) {
+      const error = new Error("Not subscriped to any bundle!");
+      error.statusCode = 404;
+      throw error;
+    }
     const clientDetails = await Client.findById(req.clientId);
     await clientDetails.filterPlanDays(clientPlan._id);
     let bundle = await Bundle.findById(clientPlan.bundleId);

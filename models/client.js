@@ -97,7 +97,10 @@ const clientSchema = new Schema({
     type: Boolean,
     default: true,
   },
-  dislikedMeals: { type: String },
+  dislikedMeals: {
+    type: String,
+    default: "",
+  },
 });
 
 clientSchema.methods.checkRepeatition = function (meal, dateId) {

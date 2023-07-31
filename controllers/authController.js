@@ -59,7 +59,7 @@ exports.postClientRegister = async (req, res, next) => {
     await newClient.save();
     res.status(201).json({
       success: true,
-      message: "Welcome aboard! your account has been created successfully",
+      message: "Welcome aboard! your account has been created successfully!",
     });
   } catch (err) {
     next(err);

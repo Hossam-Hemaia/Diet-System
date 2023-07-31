@@ -155,6 +155,13 @@ router.get(
   adminController.getClientPlanDetails
 );
 
+router.post(
+  "/renew/subscription",
+  isAuth.adminIsAuth,
+  adminController.postRenewSubscription
+);
+
+// Manager
 router.get(
   "/today/delivery/meals",
   isAuth.adminIsAuth,

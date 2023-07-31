@@ -1212,6 +1212,70 @@ exports.getClientPlanDetails = async (req, res, next) => {
   }
 };
 
+exports.postRenewSubscription = async (req, res, next) => {
+  try {
+    const { clientId, bundleId } = req.body;
+    const client = await Client.findById(clientId);
+    const bundle = await Bundle.findById(bundleId);
+    const renewFlag = client.subscriped ? true : false;
+    let startingAt;
+    if (renewFlag) {
+      const lastSubscriptionDay =
+        client.mealsPlan.meals[client.mealsPlan.meals.length - 1].date;
+      startingAt = utilities.getFutureDate(lastSubscriptionDay, 24);
+    } else {
+      const currentDate = new Date().setHours(0, 0, 0, 0);
+      const nowDate = new Date(currentDate);
+      const localDate = utilities.getLocalDate(nowDate);
+      startingAt = utilities.getFutureDate(localDate, 48);
+    }
+    if (!client.subscriped || (client.subscriped && renewFlag)) {
+      let startDate;
+      let endDate;
+      startDate = utilities.getStartDate(startingAt);
+      if (bundle.bundlePeriod === 1) {
+        endDate = utilities.getEndDate(startDate, 1, bundle.bundleOffer);
+      } else if (bundle.bundlePeriod === 2) {
+        endDate = utilities.getEndDate(startDate, 2, bundle.bundleOffer);
+      } else if (bundle.bundlePeriod === 3) {
+        endDate = utilities.getEndDate(startDate, 3, bundle.bundleOffer);
+      } else if (bundle.bundlePeriod === 4) {
+        endDate = utilities.getEndDate(startDate, 4, bundle.bundleOffer);
+      } else if (bundle.bundlePeriod > 4) {
+        endDate = utilities.getEndDate(
+          startDate,
+          bundle.bundlePeriod,
+          bundle.bundleOffer
+        );
+      }
+      const dates = utilities.fridayFilter(
+        startDate,
+        endDate,
+        bundle.fridayOption
+      );
+      client.subscriped = true;
+      const subscriptionRecord = new Subscription({
+        clientId: client._id,
+        bundleName: bundle.bundleName,
+        bundleId: bundle._id,
+        startingDate: startDate,
+        endingDate: endDate,
+      });
+      await subscriptionRecord.save();
+      await client.save();
+      await client.addMealsDates(
+        dates,
+        bundle,
+        renewFlag,
+        subscriptionRecord._id
+      );
+    }
+    res.status(201).json({ success: true, message: "Subscription renewed" });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // reporting functions
 exports.getMealsToDeliver = async (req, res, next) => {
   const mealsFilter = req.query.mealsFilter;
@@ -1662,6 +1726,7 @@ exports.getReport = async (req, res, next) => {
         ++index;
         let clientData = [];
         clientData.push(
+          utilities.textDirection(client.dislikedMeals),
           Math.floor(
             utilities.getRemainingDays(
               client.subscripedBundle.startingDate,
