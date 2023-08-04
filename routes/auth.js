@@ -59,7 +59,7 @@ router.post(
         req.user = user;
       } else if (!user) {
         user = await Admin.findOne({ username: req.body.username });
-        if (user) {
+        if (user && user.isActive) {
           const doMatch = await bcrypt.compare(value, user.password);
           if (!doMatch) {
             throw new Error("Invalid password");
@@ -67,7 +67,7 @@ router.post(
           req.user = user;
         }
       } else {
-        throw new Error("Invalid username!");
+        throw new Error("Invalid credentials!");
       }
     }),
   ],

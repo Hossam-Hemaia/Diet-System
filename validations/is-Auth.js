@@ -20,7 +20,7 @@ exports.adminIsAuth = async (req, res, next) => {
   } else {
     const error = new Error("invalid credentials");
     error.statusCode = 403;
-    next(error);
+    throw error;
   }
 };
 
@@ -44,7 +44,7 @@ exports.managerIsAuth = async (req, res, next) => {
   } else {
     const error = new Error("invalid credentials");
     error.statusCode = 403;
-    next(error);
+    throw error;
   }
 };
 
@@ -68,7 +68,7 @@ exports.specialistIsAuth = async (req, res, next) => {
   } else {
     const error = new Error("invalid credentials");
     error.statusCode = 403;
-    next(error);
+    throw error;
   }
 };
 
