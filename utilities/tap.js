@@ -19,7 +19,7 @@ module.exports = {
         headers: {
           accept: "application/json",
           "content-type": "application/json",
-          Authorization: `Bearer ${process.env.TAP_Secret_Key}`,
+          Authorization: `Bearer ${process.env.TAP_Secret_Key_Test}`,
         },
       };
       const data = {
@@ -60,7 +60,7 @@ module.exports = {
       const config = {
         headers: {
           accept: "application/json",
-          Authorization: `Bearer ${process.env.TAP_Secret_Key}`,
+          Authorization: `Bearer ${process.env.TAP_Secret_Key_Test}`,
         },
       };
       const response = await axios.get(

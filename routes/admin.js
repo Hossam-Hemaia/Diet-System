@@ -24,6 +24,8 @@ router.get("/get/meal", isAuth.adminIsAuth, adminController.getMeal);
 
 router.put("/edit/meal", isAuth.adminIsAuth, adminController.postEditMeal);
 
+router.get("/meals/filter", isAuth.adminIsAuth, adminController.getMealsFilter);
+
 router.delete("/delete/meal", isAuth.adminIsAuth, adminController.deleteMeal);
 
 // Bundles

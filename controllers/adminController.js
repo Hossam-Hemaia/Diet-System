@@ -13,6 +13,7 @@ const ChiffMenu = require("../models/chiffMenu");
 const Transaction = require("../models/transaction");
 const Menu = require("../models/menu");
 const utilities = require("../utilities/utils");
+const { start } = require("repl");
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Dashboard Home
@@ -289,6 +290,27 @@ exports.postEditMeal = async (req, res, next) => {
   }
 };
 
+exports.getMealsFilter = async (req, res, next) => {
+  try {
+    const mealsFilter = req.query.mealsFilter;
+    let meals;
+    if (mealsFilter === "all" || mealsFilter === "") {
+      meals = await Meal.find();
+    } else if (mealsFilter === "breakfast") {
+      meals = await Meal.find({ mealType: "افطار" });
+    } else if (mealsFilter === "lunch") {
+      meals = await Meal.find({ mealType: "غداء" });
+    } else if (mealsFilter === "dinner") {
+      meals = await Meal.find({ mealType: "عشاء" });
+    } else if (mealsFilter === "snack") {
+      meals = await Meal.find({ mealType: "سناك" });
+    }
+    res.status(200).json({ success: true, meals });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.deleteMeal = async (req, res, next) => {
   const mealId = req.query.mealId;
   try {
@@ -380,7 +402,7 @@ exports.postCreateBundle = async (req, res, next) => {
 exports.getBundles = async (req, res, next) => {
   try {
     let bundles;
-    bundles = await Bundle.find();
+    bundles = await Bundle.find({ customBundle: false });
     res.status(201).json({
       success: true,
       bundles: bundles,
@@ -441,13 +463,19 @@ exports.putEditBundle = async (req, res, next) => {
     bundleOffer,
     fridayOption,
     bundlePrice,
-    mealsIds,
     bundleId,
     deActivate,
     customBundle,
   } = req.body;
-  const imageMale = req.files[0];
-  const imageFemale = req.files[1];
+  if (customBundle && bundlePeriod < 5) {
+    throw new Error("Bundle period must be 5 days or more!");
+  }
+  let imageMale;
+  let imageFemale;
+  if (req.files) {
+    imageMale = req.files[0];
+    imageFemale = req.files[1];
+  }
   try {
     let bundle;
     let imageMaleBaseUrl = imageMale
@@ -484,12 +512,6 @@ exports.putEditBundle = async (req, res, next) => {
     bundle.bundleOffer = bundleOffer ? bundleOffer : bundle.bundleOffer;
     bundle.fridayOption = fridayOption;
     bundle.bundlePrice = bundlePrice ? bundlePrice : bundle.bundlePrice;
-    if (mealsIds.length > 0) {
-      bundle.menu = [];
-      for (let mealId of mealsIds) {
-        bundle.menu.push({ mealId: mongoose.Types.ObjectId(mealId) });
-      }
-    }
     bundle.bundleImageMale = imageMale
       ? imageMaleBaseUrl
       : bundle.bundleImageMale;
@@ -738,7 +760,35 @@ exports.addMenuDay = async (req, res, next) => {
 exports.getMenu = async (req, res, next) => {
   try {
     const menu = await Menu.findOne().populate("menu.meals.mealId");
-    res.status(200).json({ success: true, menu: menu.menu });
+    const detaildMenu = [];
+    for (let m of menu.menu) {
+      let day = {};
+      let breakfast = [];
+      let lunch = [];
+      let dinner = [];
+      let snack = [];
+      for (let meal of m.meals) {
+        if (meal.mealId.mealType === "افطار") {
+          breakfast.push(meal);
+        } else if (meal.mealId.mealType === "غداء") {
+          lunch.push(meal);
+        } else if (meal.mealId.mealType === "عشاء") {
+          dinner.push(meal);
+        } else if (meal.mealId.mealType === "سناك") {
+          snack.push(meal);
+        }
+      }
+      day.date = m.date;
+      day.breakfast = breakfast;
+      day.lunch = lunch;
+      day.dinner = dinner;
+      day.snack = snack;
+      detaildMenu.push(day);
+    }
+    const sortedMenu = detaildMenu.sort((a, b) => {
+      return a.date - b.date;
+    });
+    res.status(200).json({ success: true, menu: sortedMenu });
   } catch (err) {
     next(err);
   }
@@ -834,11 +884,27 @@ exports.postAddNewClient = async (req, res, next) => {
     homeNumber,
     floorNumber,
     appartment,
+    dislikedMeals,
     password,
     bundleId,
   } = req.body;
   try {
+    // check client existance
+    const currentClient = await Client.findOne({ phoneNumber: phoneNumber });
+    if (currentClient) {
+      const error = new Error("client is already registered");
+      error.statusCode = 422;
+      throw error;
+    }
+    if (clientNameEn === "" || !clientNameEn) {
+      const error = new Error("client name in English is required");
+      error.statusCode = 422;
+      throw error;
+    }
     // Create Custom Bundle
+    if (customBundle && bundlePeriod < 5) {
+      throw new Error("Bundle period must be 5 days or more!");
+    }
     const allowedMeals = [];
     if (breakfast === "on") {
       allowedMeals.push("افطار");
@@ -851,6 +917,7 @@ exports.postAddNewClient = async (req, res, next) => {
     }
     const bundleData = {
       bundleName: `مخصص ل ${clientName}`,
+      bundleNameEn: `Custom bundle for ${clientNameEn}`,
       mealsNumber,
       mealsType: allowedMeals,
       snacksNumber,
@@ -865,17 +932,6 @@ exports.postAddNewClient = async (req, res, next) => {
     const currentDate = Date.parse(new Date());
     const startTime = currentDate + twoDays;
     const startingAt = new Date(startTime);
-    const currentClient = await Client.findOne({ phoneNumber: phoneNumber });
-    if (currentClient) {
-      const error = new Error("client is already registered");
-      error.statusCode = 422;
-      throw error;
-    }
-    if (clientNameEn === "" || !clientNameEn) {
-      const error = new Error("client name in English is required");
-      error.statusCode = 422;
-      throw error;
-    }
     const hashedPassword = await bcrypt.hash(password, 12);
     let clientNumber = 1;
     const lastClient = await Client.findOne({}, { subscriptionId: 1 }).sort({
@@ -896,6 +952,7 @@ exports.postAddNewClient = async (req, res, next) => {
       homeNumber,
       floorNumber,
       appartment,
+      dislikedMeals,
       password: hashedPassword,
     });
     await newClient.save();
@@ -1217,6 +1274,9 @@ exports.postRenewSubscription = async (req, res, next) => {
     const { clientId, bundleId } = req.body;
     const client = await Client.findById(clientId);
     const bundle = await Bundle.findById(bundleId);
+    if (!bundle) {
+      throw new Error("Bundle is not found!");
+    }
     const renewFlag = client.subscriped ? true : false;
     let startingAt;
     if (renewFlag) {
@@ -1229,9 +1289,9 @@ exports.postRenewSubscription = async (req, res, next) => {
       const localDate = utilities.getLocalDate(nowDate);
       startingAt = utilities.getFutureDate(localDate, 48);
     }
+    let startDate;
+    let endDate;
     if (!client.subscriped || (client.subscriped && renewFlag)) {
-      let startDate;
-      let endDate;
       startDate = utilities.getStartDate(startingAt);
       if (bundle.bundlePeriod === 1) {
         endDate = utilities.getEndDate(startDate, 1, bundle.bundleOffer);
@@ -1247,6 +1307,16 @@ exports.postRenewSubscription = async (req, res, next) => {
           bundle.bundlePeriod,
           bundle.bundleOffer
         );
+      }
+      if (!client.subscripedBundle.bundleId) {
+        console.log("subscribe bundle");
+        client.subscripedBundle = {
+          bundleId: bundle._id,
+          startingDate: utilities.getLocalDate(startDate),
+          endingDate: utilities.getLocalDate(endDate),
+          isPaid: true,
+          paymentMethod: "Cash",
+        };
       }
       const dates = utilities.fridayFilter(
         startDate,

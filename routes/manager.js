@@ -10,6 +10,26 @@ router.get(
   adminController.getMeals
 );
 
+router.get(
+  "/manager/meals/filter",
+  isAuth.managerIsAuth,
+  adminController.getMealsFilter
+);
+
+router.post(
+  "/manager/add/menu/day",
+  isAuth.managerIsAuth,
+  adminController.addMenuDay
+);
+
+router.get("/manager/get/menu", isAuth.managerIsAuth, adminController.getMenu);
+
+router.delete(
+  "/manager/delete/menu/day",
+  isAuth.managerIsAuth,
+  adminController.deleteMenuDay
+);
+
 router.post(
   "/manager/chiff/menu",
   isAuth.managerIsAuth,

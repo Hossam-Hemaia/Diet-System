@@ -164,11 +164,13 @@ exports.postSubscripe = async (req, res, next) => {
       } else if (bundle.bundlePeriod === 4) {
         endDate = utilities.getEndDate(startDate, 4, bundle.bundleOffer);
       }
+      let localStartDate;
+      let localEndDate;
       if (!renewFlag) {
         let nowStart = new Date(startDate);
-        let localStartDate = utilities.getLocalDate(nowStart);
+        localStartDate = utilities.getLocalDate(nowStart);
         let nowEnd = new Date(endDate);
-        let localEndDate = utilities.getLocalDate(nowEnd);
+        localEndDate = utilities.getLocalDate(nowEnd);
         client.subscripedBundle = {
           bundleId: bundle._id,
           startingDate: localStartDate,
@@ -423,12 +425,19 @@ exports.getClientPlanDetails = async (req, res, next) => {
       clientId: ObjectId(req.clientId),
       endingDate: { $gte: futureDate },
     });
-    if (!clientPlan) {
-      const error = new Error("Not subscriped to any bundle!");
-      error.statusCode = 404;
-      throw error;
-    }
     const clientDetails = await Client.findById(req.clientId);
+    if (!clientPlan) {
+      return res.status(200).json({
+        success: false,
+        message: "Not subscriped to any bundle!",
+        hasPreviousSubscribtion: clientDetails.subscripedBundle.bundleId
+          ? true
+          : false,
+        bundleId: clientDetails.subscripedBundle.bundleId
+          ? clientDetails.subscripedBundle.bundleId
+          : "",
+      });
+    }
     await clientDetails.filterPlanDays(clientPlan._id);
     let bundle = await Bundle.findById(clientPlan.bundleId);
     const remainingDays = utilities.getRemainingDays(
@@ -449,6 +458,7 @@ exports.getClientPlanDetails = async (req, res, next) => {
       bundleDays,
       bundleName,
       bundleNameEn,
+      bundleId: bundle._id,
       startDate,
       endDate,
       remainingDays: Math.floor(remainingDays),
@@ -457,6 +467,7 @@ exports.getClientPlanDetails = async (req, res, next) => {
       bundleImageMale: bundle.bundleImageMale,
       bundleImageFemale: bundle.bundleImageFemale,
       subscriptionId: clientDetails.subscriptionId,
+      subscriped: clientDetails.subscriped,
       clientId: clientDetails._id,
     });
   } catch (err) {

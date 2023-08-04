@@ -100,6 +100,9 @@ exports.fridayFilter = (startDate, endDate, fridayOption) => {
       filteredDates.push(new Date(d));
     }
   }
+  if ((filteredDates.length = 27)) {
+    filteredDates.pop();
+  }
   return filteredDates;
 };
 
@@ -325,7 +328,8 @@ exports.activeClientsReport = async (clients) => {
 };
 
 exports.getLocalDate = (date) => {
-  const newDate = new Date(date);
+  const dateBegin = new Date(date).setHours(0, 0, 0, 0);
+  const newDate = new Date(dateBegin);
   const localDate = new Date(
     newDate.getTime() - newDate.getTimezoneOffset() * 60000
   );
