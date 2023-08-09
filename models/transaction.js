@@ -29,7 +29,7 @@ transactionSchema = new Schema(
       type: String,
     },
   },
-  { timestamps: true }
+  { timestamps: true, strictPopulate: false }
 );
 
 module.exports = mongoose.model("transaction", transactionSchema);

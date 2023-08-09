@@ -5,24 +5,28 @@ const bundleSchema = new Schema(
   {
     bundleName: {
       type: String,
-      default: "باقه مخصصه"
+      default: "باقه مخصصه",
     },
     bundleNameEn: {
       type: String,
-      default: "custom bundle"
+      default: "custom bundle",
     },
     timeOnCard: {
       type: String,
+      default: "",
     },
     timeOnCardEn: {
       type: String,
+      default: "",
     },
     mealsNumber: {
       type: String,
+      default: "0",
     },
     mealsType: [],
     snacksNumber: {
       type: String,
+      default: "0",
     },
     bundlePeriod: {
       type: Number,

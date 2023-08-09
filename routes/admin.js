@@ -90,8 +90,9 @@ router.post(
   isAuth.adminIsAuth,
   adminController.postSetSettings
 );
-
+/***************************************/
 // Menu
+/***************************************/
 router.post("/add/menu/day", isAuth.adminIsAuth, adminController.addMenuDay);
 
 router.get("/get/menu", isAuth.adminIsAuth, adminController.getMenu);
@@ -107,8 +108,9 @@ router.post(
   isAuth.adminIsAuth,
   adminController.addChiffMenuDay
 );
-
+/***************************************/
 // Client
+/***************************************/
 router.delete(
   "/admin/remove/client",
   isAuth.adminIsAuth,
@@ -130,6 +132,12 @@ router.put(
 );
 
 router.get("/all/clients", isAuth.adminIsAuth, adminController.getAllClients);
+
+router.get(
+  "/monitor/clients",
+  isAuth.adminIsAuth,
+  adminController.getNewClients
+);
 
 router.get("/get/client", isAuth.adminIsAuth, adminController.getClient);
 

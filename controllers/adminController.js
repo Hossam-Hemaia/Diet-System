@@ -928,9 +928,8 @@ exports.postAddNewClient = async (req, res, next) => {
     };
     let bundle = await utilities.createCustomBundle(bundleData);
     // Create Client With Selected Bundle
-    const twoDays = 1000 * 60 * 60 * 24 * 2;
     const currentDate = Date.parse(new Date());
-    const startTime = currentDate + twoDays;
+    const startTime = utilities.getFutureDate(currentDate, 72);
     const startingAt = new Date(startTime);
     const hashedPassword = await bcrypt.hash(password, 12);
     let clientNumber = 1;
@@ -1085,10 +1084,21 @@ exports.getAllClients = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
+    const remainingDays = [];
+    for (let client of clients) {
+      let remaining = Math.floor(
+        utilities.getRemainingDays(
+          client.subscripedBundle.startingDate,
+          client.subscripedBundle.endingDate
+        )
+      );
+      remainingDays.push(remaining);
+    }
     res.status(200).json({
       success: true,
       data: {
         clients: clients,
+        remainingDays,
         clientsCount: numOfClients,
         currentPage: page,
         hasNextPage: page * CLIENTS_PER_PAGE < numOfClients,
@@ -1098,6 +1108,35 @@ exports.getAllClients = async (req, res, next) => {
         lastPage: Math.ceil(numOfClients / CLIENTS_PER_PAGE),
       },
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getNewClients = async (req, res, next) => {
+  try {
+    const currentDate = new Date();
+    const previousDate = utilities.getPreviousDate(currentDate, 48);
+    const futureDate = utilities.getFutureDate(currentDate, 24);
+    const newClients = await Client.find(
+      {
+        subscriped: true,
+        "subscripedBundle.startingDate": {
+          $gte: previousDate,
+          $lte: futureDate,
+        },
+      },
+      { clientName: 1, phoneNumber: 1, subscriptionId: 1, subscripedBundle: 1 }
+    ).populate("subscripedBundle.bundleId");
+    const endingBefore = utilities.getFutureDate(currentDate, 120);
+    const endingClients = await Client.find(
+      {
+        subscriped: true,
+        "subscripedBundle.endingDate": { $lte: endingBefore },
+      },
+      { clientName: 1, phoneNumber: 1, subscriptionId: 1, subscripedBundle: 1 }
+    ).populate("subscripedBundle.bundleId");
+    res.status(200).json({ success: true, newClients, endingClients });
   } catch (err) {
     next(err);
   }
@@ -1213,9 +1252,12 @@ exports.putEditClientMeal = async (req, res, next) => {
 exports.getClientPlanDetails = async (req, res, next) => {
   const clientId = req.query.clientId;
   try {
+    const currentDate = new Date();
+    const futureDate = utilities.getFutureDate(currentDate, 48);
     const clientPlan = await Subscription.findOne({
       clientId: ObjectId(clientId),
-    }).sort({ _id: -1 });
+      endingDate: { $gte: futureDate },
+    });
     const clientDetails = await Client.findById(clientId);
     if (!clientDetails.subscriped) {
       return res.status(200).json({
@@ -2048,7 +2090,7 @@ exports.getReport = async (req, res, next) => {
               month: "2-digit",
               year: "numeric",
             }),
-          utilities.textDirection(transaction.clientId.clientName),
+          utilities.textDirection(transaction.clientId?.clientName || ""),
           index
         );
         transactionsData.push(detail);

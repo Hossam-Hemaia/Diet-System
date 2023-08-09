@@ -343,7 +343,7 @@ exports.updateCurrentSubscriptionBundle = async () => {
     for (let client of clients) {
       if (client.subscriped) {
         const currentDate = new Date();
-        const futureDate = this.getFutureDate(currentDate, 48);
+        const previousDate = this.getFutureDate(currentDate, 48);
         const subscription = await Subscription.findOne({
           clientId: client._id,
           endingDate: { $gte: futureDate },
@@ -396,6 +396,16 @@ exports.getFutureDate = (date, hours) => {
     const nowDate = new Date(date);
     const futureDate = new Date(nowDate.getTime() + hours * 60 * 60 * 1000);
     return futureDate;
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+exports.getPreviousDate = (date, hours) => {
+  try {
+    const nowDate = new Date(date);
+    const previousDate = new Date(nowDate.getTime() - hours * 60 * 60 * 1000);
+    return previousDate;
   } catch (err) {
     throw new Error(err);
   }
