@@ -1,107 +1,110 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const clientSchema = new Schema({
-  clientName: {
-    type: String,
-    required: true,
+const clientSchema = new Schema(
+  {
+    clientName: {
+      type: String,
+      required: true,
+    },
+    clientNameEn: {
+      type: String,
+    },
+    phoneNumber: {
+      type: String,
+    },
+    subscriptionId: {
+      type: Number,
+    },
+    email: {
+      type: String,
+    },
+    gender: {
+      type: String,
+    },
+    weight: {
+      type: Number,
+    },
+    tall: {
+      type: Number,
+    },
+    distrect: {
+      type: String,
+    },
+    streetName: {
+      type: String,
+    },
+    homeNumber: {
+      type: String,
+    },
+    floorNumber: {
+      type: String,
+    },
+    appartment: {
+      type: String,
+    },
+    role: {
+      type: String,
+      default: "client",
+    },
+    subscripedBundle: {
+      bundleId: { type: Schema.Types.ObjectId, ref: "Bundle" },
+      startingDate: { type: Date },
+      endingDate: { type: Date },
+      isPaid: { type: Boolean },
+      paymentMethod: { type: String },
+    },
+    subscriped: {
+      type: Boolean,
+      default: false,
+    },
+    mealsPlan: {
+      meals: [
+        {
+          date: { type: Date },
+          dayMeals: [
+            {
+              mealId: { type: Schema.Types.ObjectId },
+              mealType: { type: String },
+              title: { type: String },
+              submitted: { type: Boolean, default: false },
+              delivered: { type: Boolean, default: false },
+            },
+          ],
+          mealsNumber: { type: Number },
+          snacksNumber: { type: Number },
+          submitted: { type: Boolean, default: false },
+          delivered: { type: Boolean, default: false },
+          suspended: { type: Boolean, default: false },
+          subscriptionId: { type: Schema.Types.ObjectId, ref: "Subscription" },
+        },
+      ],
+    },
+    clientStatus: {
+      paused: { type: Boolean, default: false },
+      pauseDate: { type: Date },
+      numPause: { type: Number, default: 1 },
+    },
+    password: {
+      type: String,
+    },
+    resetCode: {
+      type: String,
+    },
+    codeExpiry: {
+      type: Date,
+    },
+    hasProfile: {
+      type: Boolean,
+      default: true,
+    },
+    dislikedMeals: {
+      type: String,
+      default: "",
+    },
   },
-  clientNameEn: {
-    type: String,
-  },
-  phoneNumber: {
-    type: String,
-  },
-  subscriptionId: {
-    type: Number,
-  },
-  email: {
-    type: String,
-  },
-  gender: {
-    type: String,
-  },
-  weight: {
-    type: Number,
-  },
-  tall: {
-    type: Number,
-  },
-  distrect: {
-    type: String,
-  },
-  streetName: {
-    type: String,
-  },
-  homeNumber: {
-    type: String,
-  },
-  floorNumber: {
-    type: String,
-  },
-  appartment: {
-    type: String,
-  },
-  role: {
-    type: String,
-    default: "client",
-  },
-  subscripedBundle: {
-    bundleId: { type: Schema.Types.ObjectId, ref: "Bundle" },
-    startingDate: { type: Date },
-    endingDate: { type: Date },
-    isPaid: { type: Boolean },
-    paymentMethod: { type: String },
-  },
-  subscriped: {
-    type: Boolean,
-    default: false,
-  },
-  mealsPlan: {
-    meals: [
-      {
-        date: { type: Date },
-        dayMeals: [
-          {
-            mealId: { type: Schema.Types.ObjectId },
-            mealType: { type: String },
-            title: { type: String },
-            submitted: { type: Boolean, default: false },
-            delivered: { type: Boolean, default: false },
-          },
-        ],
-        mealsNumber: { type: Number },
-        snacksNumber: { type: Number },
-        submitted: { type: Boolean, default: false },
-        delivered: { type: Boolean, default: false },
-        suspended: { type: Boolean, default: false },
-        subscriptionId: { type: Schema.Types.ObjectId, ref: "Subscription" },
-      },
-    ],
-  },
-  clientStatus: {
-    paused: { type: Boolean, default: false },
-    pauseDate: { type: Date },
-    numPause: { type: Number, default: 1 },
-  },
-  password: {
-    type: String,
-  },
-  resetCode: {
-    type: String,
-  },
-  codeExpiry: {
-    type: Date,
-  },
-  hasProfile: {
-    type: Boolean,
-    default: true,
-  },
-  dislikedMeals: {
-    type: String,
-    default: "",
-  },
-});
+  { timestamps: true }
+);
 
 clientSchema.methods.checkRepeatition = function (meal, dateId) {
   //find meal day

@@ -1121,7 +1121,7 @@ exports.getNewClients = async (req, res, next) => {
     const newClients = await Client.find(
       {
         subscriped: true,
-        "subscripedBundle.startingDate": {
+        createdAt: {
           $gte: previousDate,
           $lte: futureDate,
         },

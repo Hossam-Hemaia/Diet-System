@@ -451,6 +451,7 @@ exports.getClientPlanDetails = async (req, res, next) => {
     const bundleDays = originalPeriod + additionalDays;
     const bundleName = bundle.bundleName;
     const bundleNameEn = bundle.bundleNameEn;
+    const bundleMealsTypes = bundle.mealsType;
     const startDate = clientPlan.startingDate;
     const endDate = clientPlan.endingDate;
     res.status(200).json({
@@ -469,6 +470,7 @@ exports.getClientPlanDetails = async (req, res, next) => {
       subscriptionId: clientDetails.subscriptionId,
       subscriped: clientDetails.subscriped,
       clientId: clientDetails._id,
+      bundleMealsTypes,
     });
   } catch (err) {
     const error = new Error(err);
