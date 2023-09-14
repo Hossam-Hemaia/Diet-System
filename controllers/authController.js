@@ -81,11 +81,16 @@ exports.postLogin = async (req, res, next) => {
         active: req.user.isActive || "",
       },
       process.env.SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: "7d" }
     );
+    const refreshToken = jwt.sign({}, process.env.REFRESH_TOKEN_SECRET, {
+      expiresIn: "1y",
+      audience: req.user._id.toString(),
+    });
     res.status(200).json({
       success: true,
       token: token,
+      refreshToken: refreshToken,
       user: req.user,
       message: "You logged in successfully!",
     });
@@ -296,5 +301,37 @@ exports.getVerifyToken = async (req, res, next) => {
     return res
       .status(200)
       .json({ success: true, decodedToken: decodedToken, hasProfile: false });
+  }
+};
+
+exports.postGenerateAccessToken = async (req, res, next) => {
+  try {
+    const refreshToken = req.body.refreshToken;
+    const verifiedToken = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+    const user = await Client.findById(verifiedToken.aud);
+    if (!user) {
+      throw new Error("Invalid user id!");
+    }
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        role: user.role,
+        active: user.isActive || "",
+      },
+      process.env.SECRET,
+      { expiresIn: "7d" }
+    );
+    const newRefreshToken = jwt.sign({}, process.env.REFRESH_TOKEN_SECRET, {
+      expiresIn: "1y",
+      audience: user._id.toString(),
+    });
+    res
+      .status(201)
+      .json({ success: true, token, refreshToken: newRefreshToken });
+  } catch (err) {
+    next(err);
   }
 };

@@ -140,9 +140,14 @@ exports.getEndActiveDate = (startDate, numberOfDays) => {
 };
 
 exports.textDirection = (str) => {
-  const strArr = str.split(" ");
-  newStr = strArr.reverse().join(" ");
-  return newStr;
+  const isEnglishLetters = /^[a-zA-Z]$/.test(str);
+  if (isEnglishLetters) {
+    return str;
+  } else {
+    const strArr = str.split(" ");
+    newStr = strArr.reverse().join(" ");
+    return newStr;
+  }
 };
 
 exports.emailSender = async (email, resetCode, emailType = "reset") => {

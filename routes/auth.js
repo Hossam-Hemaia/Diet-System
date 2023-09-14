@@ -96,4 +96,6 @@ router.get("/auth/google/callback", authController.postGoogleAuth);
 
 router.get("/get/verify/token", authController.getVerifyToken);
 
+router.post("/generate/access/token", authController.postGenerateAccessToken);
+
 module.exports = router;
