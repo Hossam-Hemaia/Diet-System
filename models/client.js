@@ -101,6 +101,7 @@ const clientSchema = new Schema(
     dislikedMeals: {
       type: String,
       default: "",
+      maxLength: 100,
     },
   },
   { timestamps: true }

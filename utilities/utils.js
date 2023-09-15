@@ -5,7 +5,6 @@ const nodemailer = require("nodemailer");
 const Client = require("../models/client");
 const Bundle = require("../models/bundle");
 const Subscription = require("../models/subscription");
-const { nextTick } = require("process");
 
 const singleDay = 1000 * 60 * 60 * 24;
 
@@ -308,7 +307,11 @@ exports.activeClientsReport = async (clients) => {
       ],
       rows: clients,
     };
-    const Doc = new PdfDoc({ size: "A4", margin: 2, layout: "landscape" });
+    const Doc = new PdfDoc({
+      size: "A4",
+      margins: { top: 1, bottom: 30, left: 1, right: 1 },
+      layout: "landscape",
+    });
     Doc.pipe(fs.createWriteStream(reportPath));
     Doc.image(headerImg, {
       height: 120,

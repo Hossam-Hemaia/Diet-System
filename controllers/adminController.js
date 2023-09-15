@@ -2133,7 +2133,10 @@ exports.getReport = async (req, res, next) => {
         ],
         rows: transactionsData,
       };
-      const Doc = new PdfDoc({ size: "A4", margin: 2 });
+      const Doc = new PdfDoc({
+        size: "A4",
+        margins: { top: 1, bottom: 30, left: 1, right: 1 },
+      });
       Doc.pipe(fs.createWriteStream(reportPath));
       Doc.image(headerImg, {
         height: 120,

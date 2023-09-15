@@ -265,10 +265,14 @@ exports.postGoogleAuth = async (req, res, next) => {
       process.env.SECRET,
       { expiresIn: "7days" }
     );
+    const refreshToken = jwt.sign({}, process.env.REFRESH_TOKEN_SECRET, {
+      expiresIn: "1y",
+      audience: client._id.toString(),
+    });
     res
       .status(200)
       .redirect(
-        `https://easydietkw.com/auth/login?token=${token}&hasProfile=${client.hasProfile}`
+        `https://easydietkw.com/auth/login?token=${token}&hasProfile=${client.hasProfile}&refreshToken=${refreshToken}&clientId=${client._id}`
       );
   } catch (err) {
     next(err);
