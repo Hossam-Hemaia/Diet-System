@@ -979,13 +979,9 @@ exports.postAddNewClient = async (req, res, next) => {
         );
       }
       let nowStart = new Date(startDate);
-      let localStartDate = new Date(
-        nowStart.getTime() - nowStart.getTimezoneOffset() * 60000
-      );
+      let localStartDate = utilities.getLocalDate(nowStart);
       let nowEnd = new Date(endDate);
-      let localEndDate = new Date(
-        nowEnd.getTime() - nowEnd.getTimezoneOffset() * 60000
-      );
+      let localEndDate = utilities.getLocalDate(nowEnd);
       newClient.subscripedBundle = {
         bundleId: bundle._id,
         startingDate: localStartDate,
@@ -1003,8 +999,8 @@ exports.postAddNewClient = async (req, res, next) => {
         clientId: newClient._id,
         bundleName: bundle.bundleName,
         bundleId: bundle._id,
-        startingDate: startDate,
-        endingDate: endDate,
+        startingDate: localStartDate,
+        endingDate: localEndDate,
       });
       await subscriptionRecord.save();
       await newClient.save();
