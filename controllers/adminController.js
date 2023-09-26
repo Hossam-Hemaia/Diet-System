@@ -1750,7 +1750,7 @@ exports.getPrintMealsLabels = async (req, res, next) => {
           month: "2-digit",
           year: "numeric",
         }),
-        hint: `/م:${client.distrect}/ق:${client.streetName}/ش:${client.homeNumber}/ر:${client.floorNumber}/د:${client.appartment}`,
+        hint: `${client.distrect}/ق:${client.streetName}/ش:${client.homeNumber}/ر:${client.floorNumber}/د:${client.appartment}`,
         nutritions: "",
       };
       if (hasMeals) {
@@ -1790,7 +1790,7 @@ exports.getPrintMealsLabels = async (req, res, next) => {
           align: "center",
         });
       Doc.font(arFont)
-        .fontSize(13)
+        .fontSize(12)
         .text(utilities.textDirection(`${label.hint}`), {
           align: "center",
         });
