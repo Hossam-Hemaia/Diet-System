@@ -94,6 +94,8 @@ router.get("/auth/google", authController.getGoogleUrl);
 
 router.get("/auth/google/callback", authController.postGoogleAuth);
 
+router.post("/google/apple/auth", authController.postGoogleAppleAuth);
+
 router.get("/get/verify/token", authController.getVerifyToken);
 
 router.post("/generate/access/token", authController.postGenerateAccessToken);

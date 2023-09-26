@@ -139,7 +139,7 @@ exports.getEndActiveDate = (startDate, numberOfDays) => {
 };
 
 exports.textDirection = (str) => {
-  const isEnglishLetters = /^[a-zA-Z]$/.test(str);
+  const isEnglishLetters = /^[a-zA-Z]+$/.test(str.split(" ").join(""));
   if (isEnglishLetters) {
     return str;
   } else {

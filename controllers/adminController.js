@@ -1186,6 +1186,10 @@ exports.postActivateClient = async (req, res, next) => {
   try {
     const activationDate = new Date().setHours(2, 0, 1, 1);
     const client = await Client.findById(clientId);
+    const clientPlan = await Subscription.findOne({
+      clientId: ObjectId(client._id),
+      endingDate: { $gte: activationDate },
+    });
     if (client.clientStatus.paused) {
       const pauseDate = client.clientStatus.pauseDate;
       const bundle = await Bundle.findById(client.subscripedBundle.bundleId);
@@ -1215,7 +1219,7 @@ exports.postActivateClient = async (req, res, next) => {
       );
       client.subscriped = true;
       client.clientStatus.paused = false;
-      client.addMealsDates(filteredActiveDates, bundle, true);
+      client.addMealsDates(filteredActiveDates, bundle, true, clientPlan._id);
       return res.status(201).json({ message: "تم تفعيل اشتراك العميل بنجاح" });
     } else {
       const error = new Error("تم استنفاذ عدد مرات الايقاف المسموح بها");
@@ -1595,7 +1599,8 @@ exports.getPrintMealsLabels = async (req, res, next) => {
       "subscripedBundle.endingDate": { $gte: localDate },
       "clientStatus.paused": false,
       "subscripedBundle.isPaid": true,
-    });
+    }).populate("subscripedBundle.bundleId");
+    console.log(clients);
     textDate = new Date(localDate).toDateString();
     let labels = [];
     for (let client of clients) {
@@ -1618,6 +1623,7 @@ exports.getPrintMealsLabels = async (req, res, next) => {
                 year: "numeric",
               }),
               hint: "الوجبه صالحه لمدة 3 ايام",
+              nutritions: client.subscripedBundle.bundleId.timeOnCardEn,
             };
             if (mealLabel.submitted && !mealLabel.delivered) {
               labels.push(mealLabel);
@@ -1643,6 +1649,7 @@ exports.getPrintMealsLabels = async (req, res, next) => {
                   year: "numeric",
                 }),
                 hint: "الوجبه صالحه لمدة 3 ايام",
+                nutritions: client.subscripedBundle.bundleId.timeOnCardEn,
               };
               if (mealLabel.submitted && !mealLabel.delivered) {
                 labels.push(mealLabel);
@@ -1669,6 +1676,7 @@ exports.getPrintMealsLabels = async (req, res, next) => {
                   year: "numeric",
                 }),
                 hint: "الوجبه صالحه لمدة 3 ايام",
+                nutritions: client.subscripedBundle.bundleId.timeOnCardEn,
               };
               if (mealLabel.submitted && !mealLabel.delivered) {
                 labels.push(mealLabel);
@@ -1695,6 +1703,7 @@ exports.getPrintMealsLabels = async (req, res, next) => {
                   year: "numeric",
                 }),
                 hint: "الوجبه صالحه لمدة 3 ايام",
+                nutritions: client.subscripedBundle.bundleId.timeOnCardEn,
               };
               if (mealLabel.submitted && !mealLabel.delivered) {
                 labels.push(mealLabel);
@@ -1721,6 +1730,7 @@ exports.getPrintMealsLabels = async (req, res, next) => {
                   year: "numeric",
                 }),
                 hint: "الوجبه صالحه لمدة 3 ايام",
+                nutritions: client.subscripedBundle.bundleId.timeOnCardEn,
               };
               if (mealLabel.submitted && !mealLabel.delivered) {
                 labels.push(mealLabel);
@@ -1741,6 +1751,7 @@ exports.getPrintMealsLabels = async (req, res, next) => {
           year: "numeric",
         }),
         hint: `/م:${client.distrect}/ق:${client.streetName}/ش:${client.homeNumber}/ر:${client.floorNumber}/د:${client.appartment}`,
+        nutritions: "",
       };
       if (hasMeals) {
         labels.push(addressLabel);
@@ -1750,7 +1761,7 @@ exports.getPrintMealsLabels = async (req, res, next) => {
     const reportPath = path.join("data", reportName);
     const arFont = path.join("public", "fonts", "Janna.ttf");
     const Doc = new PdfDoc({
-      size: [164.43, 107.73],
+      size: [212.59, 141.73],
       margin: 1,
     });
     Doc.pipe(fs.createWriteStream(reportPath));
@@ -1758,7 +1769,7 @@ exports.getPrintMealsLabels = async (req, res, next) => {
     let y = 2;
     labels.forEach((label, idx) => {
       Doc.font(arFont)
-        .fontSize(11)
+        .fontSize(13)
         .text(
           utilities.textDirection(`${label.clientName} - ${label.memberShip}`),
           x,
@@ -1768,16 +1779,20 @@ exports.getPrintMealsLabels = async (req, res, next) => {
           }
         );
       Doc.font(arFont)
-        .fontSize(11)
+        .fontSize(13)
         .text(utilities.textDirection(`${label.title}`), { align: "center" });
       Doc.font(arFont)
-        .fontSize(11)
+        .fontSize(13)
         .text(utilities.textDirection(`${label.date}`), { align: "center" });
       Doc.font(arFont)
-        .fontSize(9)
+        .fontSize(13)
+        .text(utilities.textDirection(`${label.nutritions}`), {
+          align: "center",
+        });
+      Doc.font(arFont)
+        .fontSize(13)
         .text(utilities.textDirection(`${label.hint}`), {
           align: "center",
-          width: 150,
         });
       if (idx < labels.length - 1) {
         Doc.addPage();

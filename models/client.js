@@ -184,7 +184,7 @@ clientSchema.methods.addMeals = function (
     const selectedMeal = {
       mealId: meal._id,
       mealType: meal.mealType,
-      title: meal.mealTitle,
+      title: meal.mealTitleEn,
       submitted: true,
     };
     let dayMeals = selectedDay.dayMeals;

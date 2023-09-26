@@ -279,6 +279,49 @@ exports.postGoogleAuth = async (req, res, next) => {
   }
 };
 
+exports.postGoogleAppleAuth = async (req, res, next) => {
+  try {
+    const { clientName, email } = req.body;
+    let client = await Client.findOne({ email: email });
+    if (!client) {
+      let clientNumber = 0;
+      const lastClient = await Client.findOne({}, { subscriptionId: 1 }).sort({
+        _id: -1,
+      });
+      if (lastClient) {
+        clientNumber = Number(lastClient.subscriptionId) + 1;
+      } else {
+        clientNumber = 1;
+      }
+      client = new Client({
+        clientName: clientName,
+        email: email,
+        subscriptionId: clientNumber,
+        hasProfile: false,
+      });
+      await client.save();
+    }
+    const token = jwt.sign(
+      {
+        userId: client._id,
+        role: client.role,
+        active: "",
+      },
+      process.env.SECRET,
+      { expiresIn: "7days" }
+    );
+    const refreshToken = jwt.sign({}, process.env.REFRESH_TOKEN_SECRET, {
+      expiresIn: "1y",
+      audience: client._id.toString(),
+    });
+    res
+      .status(200)
+      .json({ success: true, token, refreshToken, clientId: client._id });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.getVerifyToken = async (req, res, next) => {
   const token = req.query.token;
   let decodedToken;
