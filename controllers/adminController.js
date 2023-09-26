@@ -1600,7 +1600,6 @@ exports.getPrintMealsLabels = async (req, res, next) => {
       "clientStatus.paused": false,
       "subscripedBundle.isPaid": true,
     }).populate("subscripedBundle.bundleId");
-    console.log(clients);
     textDate = new Date(localDate).toDateString();
     let labels = [];
     for (let client of clients) {
@@ -1622,8 +1621,9 @@ exports.getPrintMealsLabels = async (req, res, next) => {
                 month: "2-digit",
                 year: "numeric",
               }),
-              hint: "الوجبه صالحه لمدة 3 ايام",
+              hint: utilities.textDirection("الوجبه صالحه لمدة 3 ايام"),
               nutritions: client.subscripedBundle.bundleId.timeOnCardEn,
+              hasAddress: false,
             };
             if (mealLabel.submitted && !mealLabel.delivered) {
               labels.push(mealLabel);
@@ -1648,8 +1648,9 @@ exports.getPrintMealsLabels = async (req, res, next) => {
                   month: "2-digit",
                   year: "numeric",
                 }),
-                hint: "الوجبه صالحه لمدة 3 ايام",
+                hint: utilities.textDirection("الوجبه صالحه لمدة 3 ايام"),
                 nutritions: client.subscripedBundle.bundleId.timeOnCardEn,
+                hasAddress: false,
               };
               if (mealLabel.submitted && !mealLabel.delivered) {
                 labels.push(mealLabel);
@@ -1675,8 +1676,9 @@ exports.getPrintMealsLabels = async (req, res, next) => {
                   month: "2-digit",
                   year: "numeric",
                 }),
-                hint: "الوجبه صالحه لمدة 3 ايام",
+                hint: utilities.textDirection("الوجبه صالحه لمدة 3 ايام"),
                 nutritions: client.subscripedBundle.bundleId.timeOnCardEn,
+                hasAddress: false,
               };
               if (mealLabel.submitted && !mealLabel.delivered) {
                 labels.push(mealLabel);
@@ -1702,8 +1704,9 @@ exports.getPrintMealsLabels = async (req, res, next) => {
                   month: "2-digit",
                   year: "numeric",
                 }),
-                hint: "الوجبه صالحه لمدة 3 ايام",
+                hint: utilities.textDirection("الوجبه صالحه لمدة 3 ايام"),
                 nutritions: client.subscripedBundle.bundleId.timeOnCardEn,
+                hasAddress: false,
               };
               if (mealLabel.submitted && !mealLabel.delivered) {
                 labels.push(mealLabel);
@@ -1729,8 +1732,9 @@ exports.getPrintMealsLabels = async (req, res, next) => {
                   month: "2-digit",
                   year: "numeric",
                 }),
-                hint: "الوجبه صالحه لمدة 3 ايام",
+                hint: utilities.textDirection("الوجبه صالحه لمدة 3 ايام"),
                 nutritions: client.subscripedBundle.bundleId.timeOnCardEn,
+                hasAddress: false,
               };
               if (mealLabel.submitted && !mealLabel.delivered) {
                 labels.push(mealLabel);
@@ -1750,7 +1754,15 @@ exports.getPrintMealsLabels = async (req, res, next) => {
           month: "2-digit",
           year: "numeric",
         }),
-        hint: `${client.distrect}/ق:${client.streetName}/ش:${client.homeNumber}/ر:${client.floorNumber}/د:${client.appartment}`,
+        hint: ``,
+        hasAddress: true,
+        address: {
+          distrect: client.distrect,
+          streetName: client.streetName,
+          homeNumber: client.homeNumber,
+          floorNumber: client.floorNumber,
+          appartment: client.appartment,
+        },
         nutritions: "",
       };
       if (hasMeals) {
@@ -1771,7 +1783,9 @@ exports.getPrintMealsLabels = async (req, res, next) => {
       Doc.font(arFont)
         .fontSize(13)
         .text(
-          utilities.textDirection(`${label.clientName} - ${label.memberShip}`),
+          utilities.textDirection(`${label.clientName}`) +
+            " - " +
+            `${label.memberShip}`,
           x,
           y,
           {
@@ -1789,11 +1803,35 @@ exports.getPrintMealsLabels = async (req, res, next) => {
         .text(utilities.textDirection(`${label.nutritions}`), {
           align: "center",
         });
-      Doc.font(arFont)
-        .fontSize(12)
-        .text(utilities.textDirection(`${label.hint}`), {
-          align: "center",
-        });
+      Doc.font(arFont).fontSize(12).text(`${label.hint}`, {
+        align: "center",
+      });
+      if (label.hasAddress) {
+        Doc.font(arFont)
+          .fontSize(11)
+          .text(
+            ` ${label.address?.streetName || ""} قطعه:   ${
+              label.address?.distrect || ""
+            }`,
+            {
+              align: "center",
+            }
+          );
+        Doc.font(arFont)
+          .fontSize(11)
+          .text(
+            `${utilities.textDirection(
+              label.address?.appartment || ""
+            )} شقه:  ${
+              label.address?.floorNumber || ""
+            } منزل:  ${utilities.textDirection(
+              label.address?.homeNumber || ""
+            )} شارع:`,
+            {
+              align: "center",
+            }
+          );
+      }
       if (idx < labels.length - 1) {
         Doc.addPage();
       }
