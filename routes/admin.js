@@ -4,10 +4,14 @@ const router = express.Router();
 const adminController = require("../controllers/adminController");
 const isAuth = require("../validations/is-Auth");
 
-// Dashboar stats
+/***************************************/
+// Dashboard stats                      /
+/***************************************/
 router.get("/get/stats", isAuth.adminIsAuth, adminController.getStats);
 
-// Meals
+/***************************************/
+// Meals                                /
+/***************************************/
 router.post("/create/meal", isAuth.adminIsAuth, adminController.postAddMeal);
 
 router.get("/get/meals", isAuth.adminIsAuth, adminController.getMeals);
@@ -28,7 +32,9 @@ router.get("/meals/filter", isAuth.adminIsAuth, adminController.getMealsFilter);
 
 router.delete("/delete/meal", isAuth.adminIsAuth, adminController.deleteMeal);
 
-// Bundles
+/***************************************/
+// Bundles                               /
+/***************************************/
 router.post(
   "/create/bundle",
   isAuth.adminIsAuth,
@@ -61,7 +67,9 @@ router.delete(
 
 router.get("/bundle/menu", isAuth.adminIsAuth, adminController.getMenuMeals);
 
-//Users
+/***************************************/
+// Users                                /
+/***************************************/
 router.post(
   "/create/employee",
   isAuth.adminIsAuth,
@@ -91,7 +99,7 @@ router.post(
   adminController.postSetSettings
 );
 /***************************************/
-// Menu
+// Menu                                 /
 /***************************************/
 router.post("/add/menu/day", isAuth.adminIsAuth, adminController.addMenuDay);
 
@@ -102,14 +110,29 @@ router.delete(
   isAuth.adminIsAuth,
   adminController.deleteMenuDay
 );
-
+/***************************************/
+// Chiff Menu                           /
+/***************************************/
 router.post(
-  "/add/chiff/menu",
+  "/add/chiff/menu/day",
   isAuth.adminIsAuth,
   adminController.addChiffMenuDay
 );
+
+router.get("/get/chiff/menu", isAuth.adminIsAuth, adminController.getChiffMenu);
+
+router.delete(
+  "/delete/chiff/menu/day",
+  isAuth.adminIsAuth,
+  adminController.deleteChiffMenuDay
+);
+router.post(
+  "/add/chiff/menu",
+  isAuth.adminIsAuth,
+  adminController.addChiffMenu
+);
 /***************************************/
-// Client
+// Client                               /
 /***************************************/
 router.delete(
   "/admin/remove/client",
@@ -171,7 +194,9 @@ router.post(
   adminController.postRenewSubscription
 );
 
-// Manager
+/***************************************/
+// Manager                              /
+/***************************************/
 router.get(
   "/today/delivery/meals",
   isAuth.adminIsAuth,

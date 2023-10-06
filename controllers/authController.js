@@ -314,9 +314,13 @@ exports.postGoogleAppleAuth = async (req, res, next) => {
       expiresIn: "1y",
       audience: client._id.toString(),
     });
-    res
-      .status(200)
-      .json({ success: true, token, refreshToken, clientId: client._id });
+    res.status(200).json({
+      success: true,
+      token,
+      refreshToken,
+      clientId: client._id,
+      hasProfile: client.hasProfile,
+    });
   } catch (err) {
     next(err);
   }

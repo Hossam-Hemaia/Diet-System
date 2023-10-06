@@ -808,7 +808,7 @@ exports.deleteMenuDay = async (req, res, next) => {
 };
 
 // Chiff Menu Operations
-exports.addChiffMenu = async (req, res, next) => {
+exports.addChiffMenuDay = async (req, res, next) => {
   const { date, mealsIds } = req.body;
   try {
     const nowDate = new Date(date);
@@ -845,83 +845,6 @@ exports.addChiffMenu = async (req, res, next) => {
     return res
       .status(201)
       .json({ success: true, message: "chiff menu date added!" });
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.addChiffMenuDay = async (req, res, next) => {
-  try {
-    const { date, mealsIds } = req.body;
-    const localDate = utilities.getLocalDate(date);
-    let menu = await ChiffMenu.findOne();
-    if (!menu) {
-      const meals = [];
-      for (let mealId of mealsIds) {
-        meals.push({ mealId: mongoose.Types.ObjectId(mealId) });
-      }
-      const dayMenu = { date: localDate, meals: meals };
-      menu = new ChiffMenu({
-        menu: dayMenu,
-      });
-      await menu.save();
-      return res.status(201).json({ success: true, message: "Meals added" });
-    }
-    if (menu.menu.length >= 30) {
-      await menu.removeFromMenu();
-    }
-    await menu.addToMenu(localDate, mealsIds);
-    res.status(201).json({ success: true, message: "Meals added" });
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.getChiffMenu = async (req, res, next) => {
-  try {
-    const menu = await ChiffMenu.findOne().populate("menu.meals.mealId");
-    const detaildMenu = [];
-    for (let m of menu.menu) {
-      let day = {};
-      let breakfast = [];
-      let lunch = [];
-      let dinner = [];
-      let snack = [];
-      for (let meal of m.meals) {
-        if (meal.mealId.mealType === "افطار") {
-          breakfast.push(meal);
-        } else if (meal.mealId.mealType === "غداء") {
-          lunch.push(meal);
-        } else if (meal.mealId.mealType === "عشاء") {
-          dinner.push(meal);
-        } else if (meal.mealId.mealType === "سناك") {
-          snack.push(meal);
-        }
-      }
-      day.date = m.date;
-      day.breakfast = breakfast;
-      day.lunch = lunch;
-      day.dinner = dinner;
-      day.snack = snack;
-      detaildMenu.push(day);
-    }
-    const sortedMenu = detaildMenu.sort((a, b) => {
-      return a.date - b.date;
-    });
-    res.status(200).json({ success: true, menu: sortedMenu });
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.deleteChiffMenuDay = async (req, res, next) => {
-  try {
-    const date = req.query.date;
-    const localDate = utilities.getLocalDate(date);
-    const menu = await ChiffMenu.findOne();
-    await menu.deleteMenuDate(localDate);
-    await menu.save();
-    res.status(200).json({ success: true, message: "Menu date deleted" });
   } catch (err) {
     next(err);
   }

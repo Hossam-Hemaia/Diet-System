@@ -100,4 +100,10 @@ router.get(
   adminController.getClientContract
 );
 
+router.delete(
+  "/delete/my/account",
+  isAuth.clientIsAuth,
+  adminController.deleteSubscriper
+);
+
 module.exports = router;

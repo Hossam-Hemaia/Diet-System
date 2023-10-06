@@ -95,13 +95,24 @@ exports.fridayFilter = (startDate, endDate, fridayOption) => {
     let today = new Date(d).toString();
     if (!fridayOption && today.split(" ")[0] !== "Fri") {
       filteredDates.push(new Date(d));
+    } else if (
+      !fridayOption &&
+      today.split(" ")[0] === "Fri" &&
+      filteredDates.length === 25
+    ) {
+      filteredDates.push(new Date(d + singleDay));
     } else if (fridayOption) {
       filteredDates.push(new Date(d));
     }
   }
-  if ((filteredDates.length = 27)) {
+  if (filteredDates.length === 25) {
+    const addedDate = new Date(Date.parse(filteredDates[24]) + singleDay);
+    filteredDates.push(addedDate);
+  }
+  if (filteredDates.length === 27) {
     filteredDates.pop();
   }
+  console.log(filteredDates);
   return filteredDates;
 };
 
