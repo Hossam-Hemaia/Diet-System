@@ -216,7 +216,7 @@ exports.getChiffSelectedMenu = (
   let mealsIds = [];
   let selectMealCount = 0;
   let selectSnackCount = 0;
-  for (mealType of mealsToSelect) {
+  for (let mealType of mealsToSelect) {
     const meal = chiffMenuMeals.find((meal) => {
       return meal.mealId.mealType === mealType;
     });
@@ -231,17 +231,19 @@ exports.getChiffSelectedMenu = (
       return meal.mealId.mealType === "سناك";
     });
     const snackIndex = mealsIds.findIndex((id) => {
-      if (id.toString() === snack._id.toString()) {
+      if (id._id.toString() === snack.mealId._id.toString()) {
         return id;
       }
     });
     if (snackIndex > -1) {
       let selectedSnackId = mealsIds[snackIndex];
       let newSnack = chiffMenuMeals.find((meal) => {
-        return (
+        if (
           meal.mealId.mealType === "سناك" &&
-          meal.mealId._id.toString() !== selectedSnackId.toString()
-        );
+          meal.mealId._id.toString() !== selectedSnackId._id.toString()
+        ) {
+          return meal;
+        }
       });
       mealsIds.push(newSnack.mealId);
     } else {
