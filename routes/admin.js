@@ -146,6 +146,12 @@ router.post(
   adminController.postAddNewClient
 );
 
+router.put(
+  "/edit/client/profile",
+  isAuth.adminIsAuth,
+  adminController.putEditClientProfile
+);
+
 router.get("/find/client", isAuth.adminIsAuth, adminController.getFindClient);
 
 router.put(

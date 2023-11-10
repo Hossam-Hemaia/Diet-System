@@ -768,13 +768,13 @@ exports.getMenu = async (req, res, next) => {
       let dinner = [];
       let snack = [];
       for (let meal of m.meals) {
-        if (meal.mealId.mealType === "افطار") {
+        if (meal.mealId?.mealType === "افطار") {
           breakfast.push(meal);
-        } else if (meal.mealId.mealType === "غداء") {
+        } else if (meal.mealId?.mealType === "غداء") {
           lunch.push(meal);
-        } else if (meal.mealId.mealType === "عشاء") {
+        } else if (meal.mealId?.mealType === "عشاء") {
           dinner.push(meal);
-        } else if (meal.mealId.mealType === "سناك") {
+        } else if (meal.mealId?.mealType === "سناك") {
           snack.push(meal);
         }
       }
@@ -1055,29 +1055,29 @@ exports.postAddNewClient = async (req, res, next) => {
           bundle.bundleOffer
         );
       }
-      let nowStart = new Date(startDate);
-      let localStartDate = utilities.getLocalDate(nowStart);
-      let nowEnd = new Date(endDate);
-      let localEndDate = utilities.getLocalDate(nowEnd);
-      newClient.subscripedBundle = {
-        bundleId: bundle._id,
-        startingDate: localStartDate,
-        endingDate: localEndDate,
-        isPaid: true,
-        paymentMethod: "Cash",
-      };
       const dates = utilities.fridayFilter(
         startDate,
         endDate,
         bundle.fridayOption
       );
+      // let nowStart = new Date(startDate);
+      // let localStartDate = utilities.getLocalDate(nowStart);
+      // let nowEnd = new Date(endDate);
+      // let localEndDate = utilities.getLocalDate(nowEnd);
+      newClient.subscripedBundle = {
+        bundleId: bundle._id,
+        startingDate: dates[0],
+        endingDate: dates[dates.length - 1],
+        isPaid: true,
+        paymentMethod: "Cash",
+      };
       newClient.subscriped = true;
       const subscriptionRecord = new Subscription({
         clientId: newClient._id,
         bundleName: bundle.bundleName,
         bundleId: bundle._id,
-        startingDate: localStartDate,
-        endingDate: localEndDate,
+        startingDate: dates[0],
+        endingDate: dates[dates.length - 1],
       });
       await subscriptionRecord.save();
       await newClient.save();
@@ -1095,6 +1095,38 @@ exports.postAddNewClient = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+};
+
+exports.putEditClientProfile = async (req, res, next) => {
+  const {
+    clientNameEn,
+    phoneNumber,
+    distrect,
+    streetName,
+    homeNumber,
+    floorNumber,
+    appartment,
+    clientId,
+  } = req.body;
+  try {
+    const client = await Client.findById(clientId);
+    client.clientNameEn = clientNameEn ? clientNameEn : client.clientNameEn;
+    client.phoneNumber = phoneNumber ? phoneNumber : client.phoneNumber;
+    client.distrect = distrect ? distrect : client.distrect;
+    client.streetName = streetName ? streetName : client.streetName;
+    client.homeNumber = homeNumber ? homeNumber : client.homeNumber;
+    client.floorNumber = floorNumber ? floorNumber : client.floorNumber;
+    client.appartment = appartment ? appartment : client.appartment;
+    if (phoneNumber !== "" || phoneNumber !== undefined) {
+      client.hasProfile = true;
+    }
+    await client.save();
+    res.status(201).json({ success: true, message: "Client data updated" });
+  } catch (err) {
+    const error = new Error(err);
+    error.httpStatusCode = 422;
+    next(error);
   }
 };
 
@@ -1150,6 +1182,7 @@ exports.getAllClients = async (req, res, next) => {
   try {
     const numOfClients = await Client.find().countDocuments();
     const clients = await Client.find()
+      .sort({ subscriped: -1 })
       .skip((page - 1) * CLIENTS_PER_PAGE)
       .limit(CLIENTS_PER_PAGE);
     if (!clients || clients.length < 1) {
@@ -2203,11 +2236,12 @@ exports.getReport = async (req, res, next) => {
       for (let transaction of transactions) {
         ++index;
         let detail = [];
+        let clientName = transaction.clientId?.clientName || "No Name";
         detail.push(
-          transaction.paymentId,
-          transaction.amount,
-          transaction.paymentStatus,
-          transaction.transactionStatus,
+          transaction?.paymentId || "Undefined",
+          transaction?.amount || 0,
+          transaction?.paymentStatus || "Undefined",
+          transaction?.transactionStatus,
           utilities
             .getLocalDate(transaction.createdAt)
             .toLocaleDateString("en-GB", {
@@ -2215,11 +2249,12 @@ exports.getReport = async (req, res, next) => {
               month: "2-digit",
               year: "numeric",
             }),
-          utilities.textDirection(transaction.clientId?.clientName || ""),
+          utilities.textDirection(clientName),
           index
         );
         transactionsData.push(detail);
       }
+      console.log(transactionsData);
       const transactionsTable = {
         headers: [
           {

@@ -234,15 +234,11 @@ clientSchema.methods.addMeals = function (
       dayMeals.push(selectedMeal);
       selectedDay.mealsNumber -= 1;
     } else if (mealType === "snack") {
-      let isSelected = dayMeals.findIndex((meal) => {
-        return meal.mealId.toString() === selectedMeal.mealId.toString();
-      });
-      if (isSelected >= 0) {
-        throw new Error("Snack is already selected!, select different snack");
-      } else {
-        dayMeals.push(selectedMeal);
-        selectedDay.snacksNumber -= 1;
-      }
+      // let isSelected = dayMeals.findIndex((meal) => {
+      //   return meal.mealId.toString() === selectedMeal.mealId.toString();
+      // });
+      dayMeals.push(selectedMeal);
+      selectedDay.snacksNumber -= 1;
     }
     if (selectedDay.mealsNumber === 0 && selectedDay.snacksNumber === 0) {
       selectedDay.submitted = true;

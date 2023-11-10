@@ -164,32 +164,32 @@ exports.postSubscripe = async (req, res, next) => {
       } else if (bundle.bundlePeriod === 4) {
         endDate = utilities.getEndDate(startDate, 4, bundle.bundleOffer);
       }
-      let localStartDate;
-      let localEndDate;
-      if (!renewFlag) {
-        let nowStart = new Date(startDate);
-        localStartDate = utilities.getLocalDate(nowStart);
-        let nowEnd = new Date(endDate);
-        localEndDate = utilities.getLocalDate(nowEnd);
-        client.subscripedBundle = {
-          bundleId: bundle._id,
-          startingDate: localStartDate,
-          endingDate: localEndDate,
-          isPaid: true,
-        };
-      }
+      // let localStartDate;
+      // let localEndDate;
       const dates = utilities.fridayFilter(
         startDate,
         endDate,
         bundle.fridayOption
       );
+      if (!renewFlag) {
+        // let nowStart = new Date(startDate);
+        // localStartDate = utilities.getLocalDate(nowStart);
+        // let nowEnd = new Date(endDate);
+        // localEndDate = utilities.getLocalDate(nowEnd);
+        client.subscripedBundle = {
+          bundleId: bundle._id,
+          startingDate: dates[0],
+          endingDate: dates[dates.length - 1],
+          isPaid: true,
+        };
+      }
       client.subscriped = true;
       const subscriptionRecord = new Subscription({
         clientId: client._id,
         bundleName: bundle.bundleName,
         bundleId: bundle._id,
-        startingDate: localStartDate,
-        endingDate: localEndDate,
+        startingDate: dates[0],
+        endingDate: dates[dates.length - 1],
       });
       await subscriptionRecord.save();
       await client.save();
@@ -351,7 +351,7 @@ exports.addChiffMeals = async (date) => {
       "mealsPlan.meals": { $elemMatch: { date: localDate, submitted: false } },
     });
     let chiffMenuMeals = [];
-    let mealsIds;
+    let mealsIds = [];
     for (let menu of chiffMenu.menu) {
       if (menu.date.toDateString() === new Date(localDate).toDateString()) {
         chiffMenuMeals = menu.meals;
@@ -367,7 +367,8 @@ exports.addChiffMeals = async (date) => {
       for (let dayMeals of client.mealsPlan.meals) {
         if (
           new Date(dayMeals.date).toDateString() ===
-          new Date(localDate).toDateString()
+            new Date(localDate).toDateString() &&
+          !dayMeals.submitted
         ) {
           for (let selectedMeal of dayMeals.dayMeals) {
             selectMealsTypes.push(selectedMeal.mealType);
@@ -379,38 +380,80 @@ exports.addChiffMeals = async (date) => {
       }
       let mealsToSelect = utilities.mealsReducer(
         selectMealsTypes,
-        bundleMealTypes
+        bundleMealTypes,
+        mealsNumber
       );
-      mealsIds = utilities.getChiffSelectedMenu(
+      let mealsIds = utilities.getChiffSelectedMenu(
         mealsToSelect,
         chiffMenuMeals,
         mealsNumber,
         snacksNumber
       );
       //Start adding Meals to clients
-      for (let mealId of mealsIds) {
-        const meal = await Meal.findById(mealId);
-        const mealsTypes = bundle.mealsType;
-        if (mealsTypes.includes(meal.mealType)) {
-          let mealType = meal.mealType;
-          switch (mealType) {
-            case "افطار":
-              await client.addMeals(dateId, meal, "breakfast");
-              break;
-            case "غداء":
-              await client.addMeals(dateId, meal, "lunch");
-              break;
-            case "عشاء":
-              await client.addMeals(dateId, meal, "dinner");
-              break;
-            default:
-              break;
+      if (mealsIds.length > 0) {
+        for (let mealId of mealsIds) {
+          let mealsTypes = bundle.mealsType;
+          let hasBreakFast = false;
+          let hasLunch = false;
+          let hasDinner = false;
+          if (mealsTypes.includes("افطار")) {
+            hasBreakFast = true;
           }
-        } else if (meal.mealType === "سناك") {
-          await client.addMeals(dateId, meal, "snack");
+          if (mealsTypes.includes("غداء")) {
+            hasLunch = true;
+          }
+          if (mealsTypes.includes("عشاء")) {
+            hasDinner = true;
+          }
+          if (mealsTypes.includes(mealId.mealType)) {
+            let mealType = mealId.mealType;
+            switch (mealType) {
+              case "افطار":
+                await client.addMeals(
+                  dateId,
+                  mealId,
+                  "breakfast",
+                  hasBreakFast,
+                  hasLunch,
+                  hasDinner
+                );
+                break;
+              case "غداء":
+                await client.addMeals(
+                  dateId,
+                  mealId,
+                  "lunch",
+                  hasBreakFast,
+                  hasLunch,
+                  hasDinner
+                );
+                break;
+              case "عشاء":
+                await client.addMeals(
+                  dateId,
+                  mealId,
+                  "dinner",
+                  hasBreakFast,
+                  hasLunch,
+                  hasDinner
+                );
+                break;
+              default:
+                break;
+            }
+          } else if (mealId.mealType === "سناك") {
+            await client.addMeals(
+              dateId,
+              mealId,
+              "snack",
+              hasBreakFast,
+              hasLunch,
+              hasDinner
+            );
+          }
         }
+        await client.save();
       }
-      await client.save();
     }
   } catch (err) {
     next(err);

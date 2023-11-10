@@ -193,7 +193,7 @@ exports.emailSender = async (email, resetCode, emailType = "reset") => {
   console.log(emailStatus);
 };
 
-exports.mealsReducer = (selectedMealsTypes, bundleMealsTypes) => {
+exports.mealsReducer = (selectedMealsTypes, bundleMealsTypes, mealsNumber) => {
   let mealsToSelect = [];
   if (selectedMealsTypes.length > 0) {
     for (let type of bundleMealsTypes) {
@@ -204,6 +204,9 @@ exports.mealsReducer = (selectedMealsTypes, bundleMealsTypes) => {
   } else {
     mealsToSelect = bundleMealsTypes;
   }
+  if (mealsNumber > 0 && mealsToSelect.length === 0) {
+    mealsToSelect.push("غداء", "عشاء");
+  }
   return mealsToSelect;
 };
 
@@ -213,48 +216,36 @@ exports.getChiffSelectedMenu = (
   mealsNumber,
   snacksNumber
 ) => {
-  let mealsIds = [];
+  let idsOfMeals = [];
+  let idsOfSnacks = [];
   let selectMealCount = 0;
-  let selectSnackCount = 0;
-  for (let mealType of mealsToSelect) {
-    const meal = chiffMenuMeals.find((meal) => {
-      return meal.mealId.mealType === mealType;
-    });
-    mealsIds.push(meal.mealId);
-    ++selectMealCount;
-    if (mealsNumber === selectMealCount) {
-      break;
-    }
-  }
-  for (let i = 0; i < snacksNumber; ++i) {
-    const snack = chiffMenuMeals.find((meal) => {
-      return meal.mealId.mealType === "سناك";
-    });
-    const snackIndex = mealsIds.findIndex((id) => {
-      if (id._id.toString() === snack.mealId._id.toString()) {
-        return id;
+  if (mealsToSelect.length > 0) {
+    for (let mealType of mealsToSelect) {
+      if (mealsNumber > selectMealCount) {
+        let meal = chiffMenuMeals.find((meal) => {
+          return meal.mealId.mealType === mealType;
+        });
+        idsOfMeals.push(meal.mealId);
+        ++selectMealCount;
       }
-    });
-    if (snackIndex > -1) {
-      let selectedSnackId = mealsIds[snackIndex];
-      let newSnack = chiffMenuMeals.find((meal) => {
-        if (
-          meal.mealId.mealType === "سناك" &&
-          meal.mealId._id.toString() !== selectedSnackId._id.toString()
-        ) {
-          return meal;
-        }
-      });
-      mealsIds.push(newSnack.mealId);
-    } else {
-      mealsIds.push(snack.mealId);
-    }
-    ++selectSnackCount;
-    if (snacksNumber === selectSnackCount) {
-      break;
     }
   }
-  return mealsIds;
+  if (snacksNumber > 0) {
+    let chiffSnacks = [];
+    for (let snackMeal of chiffMenuMeals) {
+      if (snackMeal.mealId.mealType === "سناك") {
+        chiffSnacks.push(snackMeal);
+      }
+    }
+    for (let i = 0; i < snacksNumber; ++i) {
+      if (chiffSnacks.length === 1) {
+        idsOfSnacks.push(chiffSnacks[chiffSnacks.length - 1].mealId);
+      } else if (chiffSnacks.length === 2 && snacksNumber === 2) {
+        idsOfSnacks.push(chiffSnacks[i].mealId);
+      }
+    }
+  }
+  return idsOfMeals.concat(idsOfSnacks);
 };
 
 exports.activeClientsReport = async (clients) => {

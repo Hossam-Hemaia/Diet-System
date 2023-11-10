@@ -50,7 +50,7 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 app.use("/data", express.static(path.join(__dirname, "data")));
 app.use(multer({ storage: fileStorage }).array("files"));
 
-cron.schedule("1 0 * * *", async () => {
+cron.schedule("0 0 * * *", async () => {
   let currentDate = new Date().setHours(0, 0, 0, 0);
   await clientController.addChiffMeals(currentDate);
 });
