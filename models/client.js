@@ -28,6 +28,10 @@ const clientSchema = new Schema(
     tall: {
       type: Number,
     },
+    governorate: {
+      // المحافظه
+      type: String,
+    },
     distrect: {
       // المنطقه
       type: String,

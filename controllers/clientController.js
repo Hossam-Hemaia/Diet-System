@@ -17,6 +17,7 @@ exports.putEditClient = async (req, res, next) => {
     clientNameEn,
     phoneNumber,
     gender,
+    governorate,
     distrect,
     streetName,
     homeNumber,
@@ -33,6 +34,7 @@ exports.putEditClient = async (req, res, next) => {
       clientNameEn !== "" ? clientNameEn : client.clientNameEn;
     client.phoneNumber = phoneNumber !== "" ? phoneNumber : client.phoneNumber;
     client.gender = gender !== "" ? gender : client.gender;
+    client.governorate = governorate !== "" ? governorate : client.governorate;
     client.distrect = distrect !== "" ? distrect : client.distrect;
     client.streetName = streetName !== "" ? streetName : client.streetName;
     client.homeNumber = homeNumber !== "" ? homeNumber : client.homeNumber;

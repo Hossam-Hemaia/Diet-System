@@ -956,6 +956,7 @@ exports.postAddNewClient = async (req, res, next) => {
     phoneNumber,
     email,
     gender,
+    governorate,
     distrect,
     streetName,
     homeNumber,
@@ -1024,6 +1025,7 @@ exports.postAddNewClient = async (req, res, next) => {
       email,
       subscriptionId: clientNumber,
       gender,
+      governorate,
       distrect,
       streetName,
       homeNumber,
@@ -1105,6 +1107,7 @@ exports.putEditClientProfile = async (req, res, next) => {
     clientNameEn,
     phoneNumber,
     gender,
+    governorate,
     distrect,
     streetName,
     homeNumber,
@@ -1119,6 +1122,7 @@ exports.putEditClientProfile = async (req, res, next) => {
       clientNameEn !== "" ? clientNameEn : client.clientNameEn;
     client.phoneNumber = phoneNumber !== "" ? phoneNumber : client.phoneNumber;
     client.gender = gender !== "" ? gender : client.gender;
+    client.governorate = governorate !== "" ? governorate : client.governorate;
     client.distrect = distrect !== "" ? distrect : client.distrect;
     client.streetName = streetName !== "" ? streetName : client.streetName;
     client.homeNumber = homeNumber !== "" ? homeNumber : client.homeNumber;
@@ -2572,7 +2576,8 @@ exports.getClientContract = async (req, res, next) => {
           "Deliver Address",
           ` ${utilities.textDirection(
             client?.streetName || ""
-          )} قطعه:   ${utilities.textDirection(client?.distrect || "")}`,
+          )} قطعه:   ${utilities.textDirection(client?.distrect || "")}  
+          ${utilities.textDirection(client?.governorate || "")}`,
           utilities.textDirection("عنوان التوصيل"),
         ],
         [
