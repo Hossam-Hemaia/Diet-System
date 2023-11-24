@@ -18,6 +18,7 @@ exports.postClientRegister = async (req, res, next) => {
     homeNumber,
     floorNumber,
     appartment,
+    appartmentNo,
     password,
     dislikedMeals,
   } = req.body;
@@ -53,6 +54,7 @@ exports.postClientRegister = async (req, res, next) => {
       homeNumber,
       floorNumber,
       appartment,
+      appartmentNo,
       password: hashedPassword,
       dislikedMeals,
     });
@@ -81,7 +83,7 @@ exports.postLogin = async (req, res, next) => {
         active: req.user.isActive || "",
       },
       process.env.SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "1y" }
     );
     const refreshToken = jwt.sign({}, process.env.REFRESH_TOKEN_SECRET, {
       expiresIn: "1y",

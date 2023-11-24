@@ -519,7 +519,6 @@ exports.putEditBundle = async (req, res, next) => {
       ? imageFemaleBaseUrl
       : bundle.bundleImageFemale;
     bundle.deActivate = deActivate;
-    bundle.customBundle = customBundle;
     await bundle.save();
     res
       .status(201)
@@ -926,8 +925,9 @@ exports.deleteChiffMenuDay = async (req, res, next) => {
     next(err);
   }
 };
-
-// client functions
+/*******************************************************/
+// client functions                                     /
+/*******************************************************/
 exports.deleteSubscriper = async (req, res, next) => {
   const clientId = req.query.clientId;
   try {
@@ -961,6 +961,7 @@ exports.postAddNewClient = async (req, res, next) => {
     homeNumber,
     floorNumber,
     appartment,
+    appartmentNo,
     dislikedMeals,
     password,
     bundleId,
@@ -1028,6 +1029,7 @@ exports.postAddNewClient = async (req, res, next) => {
       homeNumber,
       floorNumber,
       appartment,
+      appartmentNo,
       dislikedMeals,
       password: hashedPassword,
     });
@@ -1102,22 +1104,28 @@ exports.putEditClientProfile = async (req, res, next) => {
   const {
     clientNameEn,
     phoneNumber,
+    gender,
     distrect,
     streetName,
     homeNumber,
     floorNumber,
     appartment,
+    appartmentNo,
     clientId,
   } = req.body;
   try {
     const client = await Client.findById(clientId);
-    client.clientNameEn = clientNameEn ? clientNameEn : client.clientNameEn;
-    client.phoneNumber = phoneNumber ? phoneNumber : client.phoneNumber;
-    client.distrect = distrect ? distrect : client.distrect;
-    client.streetName = streetName ? streetName : client.streetName;
-    client.homeNumber = homeNumber ? homeNumber : client.homeNumber;
-    client.floorNumber = floorNumber ? floorNumber : client.floorNumber;
-    client.appartment = appartment ? appartment : client.appartment;
+    client.clientNameEn =
+      clientNameEn !== "" ? clientNameEn : client.clientNameEn;
+    client.phoneNumber = phoneNumber !== "" ? phoneNumber : client.phoneNumber;
+    client.gender = gender !== "" ? gender : client.gender;
+    client.distrect = distrect !== "" ? distrect : client.distrect;
+    client.streetName = streetName !== "" ? streetName : client.streetName;
+    client.homeNumber = homeNumber !== "" ? homeNumber : client.homeNumber;
+    client.floorNumber = floorNumber !== "" ? floorNumber : client.floorNumber;
+    client.appartment = appartment !== "" ? appartment : client.appartment;
+    client.appartmentNo =
+      appartmentNo !== "" ? appartmentNo : client.appartmentNo;
     if (phoneNumber !== "" || phoneNumber !== undefined) {
       client.hasProfile = true;
     }
@@ -1919,9 +1927,11 @@ exports.getPrintMealsLabels = async (req, res, next) => {
         Doc.font(arFont)
           .fontSize(11)
           .text(
-            ` ${label.address?.streetName || ""} قطعه:   ${
+            ` ${
+              label.address?.streetName || ""
+            } قطعه:   ${utilities.textDirection(
               label.address?.distrect || ""
-            }`,
+            )}`,
             {
               align: "center",
             }
@@ -1930,8 +1940,10 @@ exports.getPrintMealsLabels = async (req, res, next) => {
           .fontSize(11)
           .text(
             `${utilities.textDirection(
+              label.address?.appartmentNo || ""
+            )} شقه:  ${utilities.textDirection(
               label.address?.appartment || ""
-            )} شقه:  ${
+            )} دور:  ${
               label.address?.floorNumber || ""
             } منزل:  ${utilities.textDirection(
               label.address?.homeNumber || ""
@@ -2507,6 +2519,97 @@ exports.getClientContract = async (req, res, next) => {
     const arFont = path.join("public", "fonts", "Janna.ttf");
     const headerImg = path.join("public", "img", "headerSmall.png");
     const footerImg = path.join("public", "img", "footerSmall.png");
+    const customerContract = {
+      headers: [
+        { label: "بند العقد عربى", align: "left", width: 130 },
+        { label: "البيان", align: "center", width: 320 },
+        { label: "contract info", align: "right", width: 130 },
+      ],
+      rows: [
+        [
+          "Full Name",
+          utilities.textDirection(client.clientName),
+          utilities.textDirection("الاسم بالكامل"),
+        ],
+        [
+          "Subscribtion Details",
+          utilities.textDirection(
+            " باقة/  " +
+              client.subscripedBundle.bundleId.bundleName +
+              "  وجبات/ " +
+              client.subscripedBundle.bundleId.mealsNumber +
+              "  سناك/ " +
+              client.subscripedBundle.bundleId.snacksNumber
+          ),
+          utilities.textDirection("تفاصيل الاشتراك"),
+        ],
+        [
+          "Subscribtion Period",
+          utilities.textDirection(
+            " من/  " +
+              client.subscripedBundle.startingDate.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              }) +
+              "  الى/ " +
+              new Date(
+                client.subscripedBundle.endingDate.setUTCHours(0)
+              ).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })
+          ),
+          utilities.textDirection("مدة الاشتراك"),
+        ],
+        [
+          "Mobile Number",
+          client.phoneNumber,
+          utilities.textDirection("الهاتف الجوال"),
+        ],
+        [
+          "Deliver Address",
+          ` ${utilities.textDirection(
+            client?.streetName || ""
+          )} قطعه:   ${utilities.textDirection(client?.distrect || "")}`,
+          utilities.textDirection("عنوان التوصيل"),
+        ],
+        [
+          "",
+          `${
+            client?.floorNumber || ""
+          } منزل:          ${utilities.textDirection(
+            client?.homeNumber || ""
+          )} شارع:`,
+          utilities.textDirection(""),
+        ],
+        [
+          "",
+          `${utilities.textDirection(
+            client?.appartmentNo || ""
+          )} شقه:         ${utilities.textDirection(
+            client?.appartment || ""
+          )} دور:`,
+          utilities.textDirection(""),
+        ],
+        [
+          "Subscribtion Price",
+          " دينار " + client.subscripedBundle.bundleId.bundlePrice,
+          utilities.textDirection("سعر الاشتراك"),
+        ],
+        [
+          "Membership ID",
+          client.subscriptionId,
+          utilities.textDirection("رقم العضويه"),
+        ],
+        [
+          "",
+          "                                                     ",
+          utilities.textDirection("ملاحظات:"),
+        ],
+      ],
+    };
     const Doc = new PdfDoc({ size: "A4", margin: 0 });
     Doc.pipe(fs.createWriteStream(reportPath));
     Doc.image(headerImg, {
@@ -2536,183 +2639,219 @@ exports.getClientContract = async (req, res, next) => {
         underline: true,
         align: "center",
       });
-    Doc.font(arFont)
-      .fontSize(16)
-      .fillColor("black")
-      .text(`${utilities.textDirection("الأسم  بالكامل")}`, 465, 240, {
-        align: "right",
-        width: 120,
-      });
-    Doc.font(arFont)
-      .fontSize(16)
-      .text(`${utilities.textDirection(client.clientName)}`, 200, 240, {
-        align: "center",
-        width: 250,
-      });
-    Doc.font(arFont).fontSize(16).text(`Full Name`, 25, 240, {
-      align: "left",
-      width: 100,
+    await Doc.table(customerContract, {
+      prepareHeader: () => Doc.font(arFont).fontSize(9),
+      prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+        Doc.font(arFont).fontSize(14).fillColor("black");
+        indexColumn === 0 && Doc.addBackground(rectRow, "white", 0.15);
+      },
+      hideHeader: true,
+      divider: {
+        horizontal: { disabled: true, opacity: 0 },
+      },
+      x: 5,
     });
-    Doc.font(arFont)
-      .fontSize(16)
-      .fillColor("black")
-      .text(`${utilities.textDirection("تفاصيل  الإشتراك")}`, 465, 290, {
-        align: "right",
-        width: 120,
-      });
-    Doc.font(arFont)
-      .fontSize(14)
-      .text(
-        `${utilities.textDirection(
-          " باقة/  " +
-            client.subscripedBundle.bundleId.bundleName +
-            "  وجبات/ " +
-            client.subscripedBundle.bundleId.mealsNumber +
-            "  سناك/ " +
-            client.subscripedBundle.bundleId.snacksNumber
-        )}`,
-        220,
-        290,
-        {
-          align: "center",
-          width: 220,
-        }
-      );
-    Doc.font(arFont).fontSize(14).text(`Subscription Details`, 25, 290, {
-      align: "left",
-      width: 150,
-    });
-    Doc.font(arFont)
-      .fontSize(16)
-      .fillColor("black")
-      .text(`${utilities.textDirection("مدة  الإشتراك")}`, 465, 340, {
-        align: "right",
-        width: 120,
-      });
-    Doc.font(arFont)
-      .fontSize(16)
-      .text(
-        `${utilities.textDirection(
-          " من/  " +
-            client.subscripedBundle.startingDate.toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            }) +
-            "  الى/ " +
-            new Date(
-              client.subscripedBundle.endingDate.setUTCHours(0)
-            ).toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            })
-        )}`,
-        200,
-        340,
-        {
-          align: "center",
-          width: 250,
-        }
-      );
-    Doc.font(arFont).fontSize(14).text(`Subscription Period`, 25, 340, {
-      align: "left",
-      width: 150,
-    });
-    Doc.font(arFont)
-      .fontSize(16)
-      .fillColor("black")
-      .text(`${utilities.textDirection("الهاتف  الجوال")}`, 465, 390, {
-        align: "right",
-        width: 120,
-      });
-    Doc.font(arFont).fontSize(16).text(client.phoneNumber, 200, 390, {
-      align: "center",
-      width: 250,
-    });
-    Doc.font(arFont).fontSize(16).text(`Mobile Number`, 25, 390, {
-      align: "left",
-      width: 150,
-    });
-    Doc.font(arFont)
-      .fontSize(14)
-      .fillColor("black")
-      .text(`${utilities.textDirection("عنوان التوصيل")}`, 465, 440, {
-        align: "right",
-        width: 110,
-      });
-    Doc.font(arFont)
-      .fontSize(12)
-      .text(
-        `${utilities.textDirection(
-          " / منطقه " +
-            client.distrect +
-            " /قطعه " +
-            client.streetName +
-            "  / شارع " +
-            client.homeNumber +
-            "  /منزل " +
-            client.floorNumber +
-            "  /طابق-شقه " +
-            client.appartment
-        )}`,
-        170,
-        440,
-        {
-          align: "center",
-          width: 310,
-        }
-      );
-    Doc.font(arFont).fontSize(14).text(`Delivery Address`, 25, 440, {
-      align: "left",
-      width: 120,
-    });
-    Doc.font(arFont)
-      .fontSize(16)
-      .fillColor("black")
-      .text(`${utilities.textDirection("سعر الاشتراك")}`, 465, 490, {
-        align: "right",
-        width: 120,
-      });
-    Doc.font(arFont)
-      .fontSize(16)
-      .text(
-        " دينار " + client.subscripedBundle.bundleId.bundlePrice,
-        200,
-        490,
-        {
-          align: "center",
-          width: 250,
-          underline: true,
-        }
-      );
-    Doc.font(arFont).fontSize(16).text(`Subscription Price`, 25, 490, {
-      align: "left",
-      width: 150,
-    });
-    Doc.font(arFont)
-      .fontSize(16)
-      .fillColor("black")
-      .text(`${utilities.textDirection("رقم  العضويه")}`, 465, 540, {
-        align: "right",
-        width: 120,
-      });
-    Doc.font(arFont).fontSize(16).text(client.subscriptionId, 200, 540, {
-      align: "center",
-      width: 150,
-      underline: true,
-    });
-    Doc.font(arFont).fontSize(16).text(`Membership Number`, 25, 540, {
-      align: "left",
-      width: 200,
-    });
-    Doc.font(arFont)
-      .fontSize(16)
-      .fillColor("black")
-      .text(`${utilities.textDirection("ملاحظات / ")}`, 465, 590, {
-        align: "right",
-        width: 120,
-      });
+    // Doc.font(arFont)
+    //   .fontSize(16)
+    //   .fillColor("black")
+    //   .text(`${utilities.textDirection("الأسم  بالكامل")}`, 465, 240, {
+    //     align: "right",
+    //     width: 120,
+    //   });
+    // Doc.font(arFont)
+    //   .fontSize(16)
+    //   .text(`${utilities.textDirection(client.clientName)}`, 200, 240, {
+    //     align: "center",
+    //     width: 250,
+    //   });
+    // Doc.font(arFont).fontSize(16).text(`Full Name`, 25, 240, {
+    //   align: "left",
+    //   width: 100,
+    // });
+    // Doc.font(arFont)
+    //   .fontSize(16)
+    //   .fillColor("black")
+    //   .text(`${utilities.textDirection("تفاصيل  الإشتراك")}`, 465, 290, {
+    //     align: "right",
+    //     width: 120,
+    //   });
+    // Doc.font(arFont)
+    //   .fontSize(14)
+    //   .text(
+    //     `${utilities.textDirection(
+    //       " باقة/  " +
+    //         client.subscripedBundle.bundleId.bundleName +
+    //         "  وجبات/ " +
+    //         client.subscripedBundle.bundleId.mealsNumber +
+    //         "  سناك/ " +
+    //         client.subscripedBundle.bundleId.snacksNumber
+    //     )}`,
+    //     220,
+    //     290,
+    //     {
+    //       align: "center",
+    //       width: 220,
+    //     }
+    //   );
+    // Doc.font(arFont).fontSize(14).text(`Subscription Details`, 25, 290, {
+    //   align: "left",
+    //   width: 150,
+    // });
+    // Doc.font(arFont)
+    //   .fontSize(16)
+    //   .fillColor("black")
+    //   .text(`${utilities.textDirection("مدة  الإشتراك")}`, 465, 340, {
+    //     align: "right",
+    //     width: 120,
+    //   });
+    // Doc.font(arFont)
+    //   .fontSize(16)
+    //   .text(
+    //     `${utilities.textDirection(
+    //       " من/  " +
+    //         client.subscripedBundle.startingDate.toLocaleDateString("en-GB", {
+    //           day: "2-digit",
+    //           month: "2-digit",
+    //           year: "numeric",
+    //         }) +
+    //         "  الى/ " +
+    //         new Date(
+    //           client.subscripedBundle.endingDate.setUTCHours(0)
+    //         ).toLocaleDateString("en-GB", {
+    //           day: "2-digit",
+    //           month: "2-digit",
+    //           year: "numeric",
+    //         })
+    //     )}`,
+    //     200,
+    //     340,
+    //     {
+    //       align: "center",
+    //       width: 250,
+    //     }
+    //   );
+    // Doc.font(arFont).fontSize(14).text(`Subscription Period`, 25, 340, {
+    //   align: "left",
+    //   width: 150,
+    // });
+    // Doc.font(arFont)
+    //   .fontSize(16)
+    //   .fillColor("black")
+    //   .text(`${utilities.textDirection("الهاتف  الجوال")}`, 465, 390, {
+    //     align: "right",
+    //     width: 120,
+    //   });
+    // Doc.font(arFont).fontSize(16).text(client.phoneNumber, 200, 390, {
+    //   align: "center",
+    //   width: 250,
+    // });
+    // Doc.font(arFont).fontSize(16).text(`Mobile Number`, 25, 390, {
+    //   align: "left",
+    //   width: 150,
+    // });
+    // Doc.font(arFont)
+    //   .fontSize(14)
+    //   .fillColor("black")
+    //   .text(`${utilities.textDirection("عنوان التوصيل")}`, 465, 440, {
+    //     align: "right",
+    //     width: 110,
+    //   });
+    // Doc.font(arFont)
+    //   .fontSize(12)
+    //   .text(
+    //     `${utilities.textDirection(
+    //       " / منطقه " +
+    //         client.distrect +
+    //         " /قطعه " +
+    //         client.streetName +
+    //         "  / شارع " +
+    //         client.homeNumber +
+    //         "  /منزل " +
+    //         client.floorNumber +
+    //         "  /طابق-شقه " +
+    //         client.appartment
+    //     )}`,
+    //     170,
+    //     440,
+    //     {
+    //       align: "center",
+    //       width: 310,
+    //     }
+    //   );
+    // Doc.font(arFont)
+    //   .fontSize(11)
+    //   .text(
+    //     ` ${client?.streetName || ""} قطعه:   ${utilities.textDirection(
+    //       client?.distrect || ""
+    //     )}`,
+    //     {
+    //       align: "center",
+    //     }
+    //   );
+    // Doc.font(arFont)
+    //   .fontSize(11)
+    //   .text(
+    //     `${utilities.textDirection(
+    //       client?.appartmentNo || ""
+    //     )} شقه:  ${utilities.textDirection(client?.appartment || "")} دور:  ${
+    //       client?.floorNumber || ""
+    //     } منزل:  ${utilities.textDirection(client?.homeNumber || "")} شارع:`,
+    //     170,
+    //     440,
+    //     {
+    //       align: "center",
+    //     }
+    //   );
+    // Doc.font(arFont).fontSize(14).text(`Delivery Address`, 25, 440, {
+    //   align: "left",
+    //   width: 120,
+    // });
+    // Doc.font(arFont)
+    //   .fontSize(16)
+    //   .fillColor("black")
+    //   .text(`${utilities.textDirection("سعر الاشتراك")}`, 465, 490, {
+    //     align: "right",
+    //     width: 120,
+    //   });
+    // Doc.font(arFont)
+    //   .fontSize(16)
+    //   .text(
+    //     " دينار " + client.subscripedBundle.bundleId.bundlePrice,
+    //     200,
+    //     490,
+    //     {
+    //       align: "center",
+    //       width: 250,
+    //       underline: true,
+    //     }
+    //   );
+    // Doc.font(arFont).fontSize(16).text(`Subscription Price`, 25, 490, {
+    //   align: "left",
+    //   width: 150,
+    // });
+    // Doc.font(arFont)
+    //   .fontSize(16)
+    //   .fillColor("black")
+    //   .text(`${utilities.textDirection("رقم  العضويه")}`, 465, 540, {
+    //     align: "right",
+    //     width: 120,
+    //   });
+    // Doc.font(arFont).fontSize(16).text(client.subscriptionId, 200, 540, {
+    //   align: "center",
+    //   width: 150,
+    //   underline: true,
+    // });
+    // Doc.font(arFont).fontSize(16).text(`Membership Number`, 25, 540, {
+    //   align: "left",
+    //   width: 200,
+    // });
+    // Doc.font(arFont)
+    //   .fontSize(16)
+    //   .fillColor("black")
+    //   .text(`${utilities.textDirection("ملاحظات / ")}`, 465, 590, {
+    //     align: "right",
+    //     width: 120,
+    //   });
     Doc.image(footerImg, -38, 720, {
       height: 130,
       align: "center",

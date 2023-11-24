@@ -29,18 +29,27 @@ const clientSchema = new Schema(
       type: Number,
     },
     distrect: {
+      // المنطقه
       type: String,
     },
     streetName: {
+      // القطعه
       type: String,
     },
     homeNumber: {
+      // الشارع
       type: String,
     },
     floorNumber: {
+      // المنزل
       type: String,
     },
     appartment: {
+      // الدور
+      type: String,
+    },
+    appartmentNo: {
+      // الشقه
       type: String,
     },
     role: {

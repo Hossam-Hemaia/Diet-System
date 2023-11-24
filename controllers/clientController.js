@@ -22,26 +22,31 @@ exports.putEditClient = async (req, res, next) => {
     homeNumber,
     floorNumber,
     appartment,
+    appartmentNo,
     dislikedMeals,
     clientId,
   } = req.body;
   try {
     const client = await Client.findById(clientId);
-    client.clientName = clientName ? clientName : client.clientName;
-    client.clientNameEn = clientNameEn ? clientNameEn : client.clientNameEn;
-    client.phoneNumber = phoneNumber ? phoneNumber : client.phoneNumber;
-    client.gender = gender ? gender : client.gender;
-    client.distrect = distrect ? distrect : client.distrect;
-    client.streetName = streetName ? streetName : client.streetName;
-    client.homeNumber = homeNumber ? homeNumber : client.homeNumber;
-    client.floorNumber = floorNumber ? floorNumber : client.floorNumber;
-    client.appartment = appartment ? appartment : client.appartment;
-    client.dislikedMeals = dislikedMeals ? dislikedMeals : client.dislikedMeals;
+    client.clientName = clientName !== "" ? clientName : client.clientName;
+    client.clientNameEn =
+      clientNameEn !== "" ? clientNameEn : client.clientNameEn;
+    client.phoneNumber = phoneNumber !== "" ? phoneNumber : client.phoneNumber;
+    client.gender = gender !== "" ? gender : client.gender;
+    client.distrect = distrect !== "" ? distrect : client.distrect;
+    client.streetName = streetName !== "" ? streetName : client.streetName;
+    client.homeNumber = homeNumber !== "" ? homeNumber : client.homeNumber;
+    client.floorNumber = floorNumber !== "" ? floorNumber : client.floorNumber;
+    client.appartment = appartment !== "" ? appartment : client.appartment;
+    client.appartmentNo =
+      appartmentNo !== "" ? appartmentNo : client.appartmentNo;
+    client.dislikedMeals =
+      dislikedMeals !== "" ? dislikedMeals : client.dislikedMeals;
     if (phoneNumber !== "" || phoneNumber !== undefined) {
       client.hasProfile = true;
     }
     await client.save();
-    res.status(201).json({ success: true, message: "Client data updated" });
+    res.status(201).json({ success: true, message: "Client profile updated" });
   } catch (err) {
     const error = new Error(err);
     error.httpStatusCode = 422;
