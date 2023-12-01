@@ -357,8 +357,12 @@ exports.addChiffMeals = async (date) => {
       "clientStatus.paused": false,
       "mealsPlan.meals": { $elemMatch: { date: localDate, submitted: false } },
     });
+    if (clients.length <= 0) {
+      return;
+    } else {
+      console.log("clients not select meals: " + clients.length);
+    }
     let chiffMenuMeals = [];
-    let mealsIds = [];
     for (let menu of chiffMenu.menu) {
       if (menu.date.toDateString() === new Date(localDate).toDateString()) {
         chiffMenuMeals = menu.meals;

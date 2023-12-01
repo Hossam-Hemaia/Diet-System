@@ -926,7 +926,7 @@ exports.deleteChiffMenuDay = async (req, res, next) => {
   }
 };
 /*******************************************************/
-// client functions                                     /
+// client functions                                    //
 /*******************************************************/
 exports.deleteSubscriper = async (req, res, next) => {
   const clientId = req.query.clientId;
@@ -1310,8 +1310,7 @@ exports.postActivateClient = async (req, res, next) => {
     const client = await Client.findById(clientId);
     const clientPlan = await Subscription.findOne({
       clientId: ObjectId(client._id),
-      endingDate: { $gte: activationDate },
-    });
+    }).sort({ createdAt: -1 });
     if (client.clientStatus.paused) {
       const pauseDate = client.clientStatus.pauseDate;
       const bundle = await Bundle.findById(client.subscripedBundle.bundleId);
