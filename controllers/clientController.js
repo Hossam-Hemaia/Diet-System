@@ -39,9 +39,8 @@ exports.putEditClient = async (req, res, next) => {
     client.streetName = streetName !== "" ? streetName : client.streetName;
     client.homeNumber = homeNumber !== "" ? homeNumber : client.homeNumber;
     client.floorNumber = floorNumber !== "" ? floorNumber : client.floorNumber;
-    client.appartment = appartment !== "" ? appartment : client.appartment;
-    client.appartmentNo =
-      appartmentNo !== "" ? appartmentNo : client.appartmentNo;
+    client.appartment = appartment !== "" ? appartment : "";
+    client.appartmentNo = appartmentNo !== "" ? appartmentNo : "";
     client.dislikedMeals =
       dislikedMeals !== "" ? dislikedMeals : client.dislikedMeals;
     if (phoneNumber !== "" || phoneNumber !== undefined) {
