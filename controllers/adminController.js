@@ -1144,6 +1144,7 @@ exports.putEditClientProfile = async (req, res, next) => {
 exports.getFindClient = async (req, res, next) => {
   const searchTerm = req.query.searchTerm;
   try {
+    const searchId = parseInt(searchTerm);
     if (searchTerm === "") {
       const clients = await Client.find();
       return res.status(200).json({ success: true, clients: clients });
@@ -1154,12 +1155,31 @@ exports.getFindClient = async (req, res, next) => {
         { phoneNumber: { $regex: searchTerm, $options: "i" } },
       ],
     });
-    if (!isNaN(searchTerm) && (!clients || clients.length < 1)) {
-      clients = await Client.find({ subscriptionId: Number(searchTerm) });
+    if (!isNaN(searchId)) {
+      clients = await Client.find({ subscriptionId: Number(searchId) });
+    }
+    const remainingDays = [];
+    const currentDate = new Date();
+    const futureDate = utilities.getFutureDate(currentDate, 48);
+    for (let client of clients) {
+      const clientPlan = await Subscription.findOne({
+        clientId: ObjectId(client._id),
+        endingDate: { $gte: futureDate },
+      });
+      if (clientPlan && client.subscriped) {
+        let remaining = utilities.getRemainingDays(
+          clientPlan.startingDate,
+          clientPlan.endingDate
+        );
+        remainingDays.push(Math.floor(remaining));
+      } else {
+        remainingDays.push(0);
+      }
     }
     res.status(201).json({
       success: true,
       clients: clients,
+      remainingDays,
     });
   } catch (err) {
     const error = new Error(err);
@@ -1202,14 +1222,22 @@ exports.getAllClients = async (req, res, next) => {
       throw error;
     }
     const remainingDays = [];
+    const currentDate = new Date();
+    const futureDate = utilities.getFutureDate(currentDate, 48);
     for (let client of clients) {
-      let remaining = Math.floor(
-        utilities.getRemainingDays(
-          client.subscripedBundle.startingDate,
-          client.subscripedBundle.endingDate
-        )
-      );
-      remainingDays.push(remaining);
+      const clientPlan = await Subscription.findOne({
+        clientId: ObjectId(client._id),
+        endingDate: { $gte: futureDate },
+      });
+      if (clientPlan && client.subscriped) {
+        let remaining = utilities.getRemainingDays(
+          clientPlan.startingDate,
+          clientPlan.endingDate
+        );
+        remainingDays.push(Math.floor(remaining));
+      } else {
+        remainingDays.push(0);
+      }
     }
     res.status(200).json({
       success: true,
@@ -1898,9 +1926,9 @@ exports.getPrintMealsLabels = async (req, res, next) => {
     Doc.pipe(fs.createWriteStream(reportPath));
     let x = 2;
     let y = 2;
-    labels.forEach((label, idx) => {
+    for (const [idx, label] of labels.entries()) {
       Doc.font(arFont)
-        .fontSize(13)
+        .fontSize(12)
         .text(
           utilities.textDirection(`${label.clientName}`) +
             " - " +
@@ -1912,13 +1940,13 @@ exports.getPrintMealsLabels = async (req, res, next) => {
           }
         );
       Doc.font(arFont)
-        .fontSize(13)
+        .fontSize(12)
         .text(utilities.textDirection(`${label.title}`), { align: "center" });
       Doc.font(arFont)
-        .fontSize(13)
+        .fontSize(12)
         .text(utilities.textDirection(`${label.date}`), { align: "center" });
       Doc.font(arFont)
-        .fontSize(13)
+        .fontSize(12)
         .text(utilities.textDirection(`${label.nutritions}`), {
           align: "center",
         });
@@ -1926,39 +1954,77 @@ exports.getPrintMealsLabels = async (req, res, next) => {
         align: "center",
       });
       if (label.hasAddress) {
-        Doc.font(arFont)
-          .fontSize(11)
-          .text(
-            ` ${
-              label.address?.streetName || ""
-            } قطعه:   ${utilities.textDirection(
-              label.address?.distrect || ""
-            )}`,
-            {
-              align: "center",
-            }
-          );
-        Doc.font(arFont)
-          .fontSize(11)
-          .text(
-            `${utilities.textDirection(
-              label.address?.appartmentNo || ""
-            )} شقه:  ${utilities.textDirection(
-              label.address?.appartment || ""
-            )} دور:  ${
-              label.address?.floorNumber || ""
-            } منزل:  ${utilities.textDirection(
-              label.address?.homeNumber || ""
-            )} شارع:`,
-            {
-              align: "center",
-            }
-          );
+        const addressTable = {
+          headers: [
+            { label: "address", align: "center" },
+            { label: "value", align: "center" },
+          ],
+          rows: [
+            [
+              utilities.textDirection(label?.address?.streetName ?? "") +
+                "  ق:",
+              utilities.textDirection(label?.address?.distrect ?? ""),
+            ],
+            [
+              utilities.textDirection(label?.address?.floorNumber ?? "") +
+                "  م:",
+              utilities.textDirection(label?.address?.homeNumber ?? "") +
+                "  ش:",
+            ],
+            [
+              utilities.textDirection(label?.address?.appartmentNo ?? "") +
+                "  شقه:",
+              utilities.textDirection(label?.address?.appartment ?? "") +
+                "  دور:",
+            ],
+          ],
+        };
+        await Doc.table(addressTable, {
+          prepareHeader: () => Doc.font(arFont).fontSize(9),
+          prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+            Doc.font(arFont).fontSize(10).fillColor("black");
+            indexColumn === 0 && Doc.addBackground(rectRow, "white", 0.15);
+          },
+          hideHeader: true,
+          height: 5,
+          // divider: {
+          //   horizontal: { disabled: true, opacity: 0 },
+          // },
+          // x: 5,
+        });
+        // Doc.font(arFont)
+        //   .fontSize(11)
+        //   .text(
+        //     ` ${
+        //       label.address?.streetName || ""
+        //     } قطعه:   ${utilities.textDirection(
+        //       label.address?.distrect || ""
+        //     )}`,
+        //     {
+        //       align: "center",
+        //     }
+        //   );
+        // Doc.font(arFont)
+        //   .fontSize(11)
+        //   .text(
+        //     `${utilities.textDirection(
+        //       label.address?.appartmentNo || ""
+        //     )} شقه:  ${utilities.textDirection(
+        //       label.address?.appartment || ""
+        //     )} دور:  ${
+        //       label.address?.floorNumber || ""
+        //     } منزل:  ${utilities.textDirection(
+        //       label.address?.homeNumber || ""
+        //     )} شارع:`,
+        //     {
+        //       align: "center",
+        //     }
+        //   );
       }
       if (idx < labels.length - 1) {
         Doc.addPage();
       }
-    });
+    }
     Doc.end();
     let protocol;
     if (req.get("host").includes("localhost")) {
