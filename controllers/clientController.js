@@ -178,14 +178,18 @@ exports.postSubscripe = async (req, res, next) => {
         bundle.fridayOption
       );
       if (!renewFlag) {
-        // let nowStart = new Date(startDate);
-        // localStartDate = utilities.getLocalDate(nowStart);
-        // let nowEnd = new Date(endDate);
-        // localEndDate = utilities.getLocalDate(nowEnd);
+        let nowStart = new Date(dates[0]);
+        let localStartDate = new Date(
+          nowStart.getTime() - nowStart.getTimezoneOffset() * 60000
+        );
+        let nowEnd = new Date(dates[dates.length - 1]);
+        let localEndDate = new Date(
+          nowEnd.getTime() - nowEnd.getTimezoneOffset() * 60000
+        );
         client.subscripedBundle = {
           bundleId: bundle._id,
-          startingDate: dates[0],
-          endingDate: dates[dates.length - 1],
+          startingDate: localStartDate,
+          endingDate: localEndDate,
           isPaid: true,
         };
       }

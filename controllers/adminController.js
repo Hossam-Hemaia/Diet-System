@@ -1064,14 +1064,18 @@ exports.postAddNewClient = async (req, res, next) => {
         endDate,
         bundle.fridayOption
       );
-      // let nowStart = new Date(startDate);
-      // let localStartDate = utilities.getLocalDate(nowStart);
-      // let nowEnd = new Date(endDate);
-      // let localEndDate = utilities.getLocalDate(nowEnd);
+      let nowStart = new Date(dates[0]);
+      let localStartDate = new Date(
+        nowStart.getTime() - nowStart.getTimezoneOffset() * 60000
+      );
+      let nowEnd = new Date(dates[dates.length - 1]);
+      let localEndDate = new Date(
+        nowEnd.getTime() - nowEnd.getTimezoneOffset() * 60000
+      );
       newClient.subscripedBundle = {
         bundleId: bundle._id,
-        startingDate: dates[0],
-        endingDate: dates[dates.length - 1],
+        startingDate: localStartDate,
+        endingDate: localEndDate,
         isPaid: true,
         paymentMethod: "Cash",
       };
@@ -1080,8 +1084,8 @@ exports.postAddNewClient = async (req, res, next) => {
         clientId: newClient._id,
         bundleName: bundle.bundleName,
         bundleId: bundle._id,
-        startingDate: dates[0],
-        endingDate: dates[dates.length - 1],
+        startingDate: localStartDate,
+        endingDate: localEndDate,
       });
       await subscriptionRecord.save();
       await newClient.save();
@@ -1145,16 +1149,16 @@ exports.getFindClient = async (req, res, next) => {
   const searchTerm = req.query.searchTerm;
   try {
     const searchId = parseInt(searchTerm);
+    let clients;
     if (searchTerm === "") {
-      const clients = await Client.find();
-      return res.status(200).json({ success: true, clients: clients });
+      clients = await Client.find().sort({ subscriped: -1 });
     }
-    let clients = await Client.find({
+    clients = await Client.find({
       $or: [
         { clientName: { $regex: searchTerm, $options: "i" } },
         { phoneNumber: { $regex: searchTerm, $options: "i" } },
       ],
-    });
+    }).sort({ subscriped: -1 });
     if (!isNaN(searchId)) {
       clients = await Client.find({ subscriptionId: Number(searchId) });
     }
@@ -1498,27 +1502,34 @@ exports.postRenewSubscription = async (req, res, next) => {
           bundle.bundleOffer
         );
       }
-      if (!client.subscripedBundle.bundleId) {
-        client.subscripedBundle = {
-          bundleId: bundle._id,
-          startingDate: utilities.getLocalDate(startDate),
-          endingDate: utilities.getLocalDate(endDate),
-          isPaid: true,
-          paymentMethod: "Cash",
-        };
-      }
+
       const dates = utilities.fridayFilter(
         startDate,
         endDate,
         bundle.fridayOption
       );
+      let nowStart = new Date(dates[0]);
+      let localStartDate = new Date(
+        nowStart.getTime() - nowStart.getTimezoneOffset() * 60000
+      );
+      let nowEnd = new Date(dates[dates.length - 1]);
+      let localEndDate = new Date(
+        nowEnd.getTime() - nowEnd.getTimezoneOffset() * 60000
+      );
+      client.subscripedBundle = {
+        bundleId: bundle._id,
+        startingDate: localStartDate,
+        endingDate: localEndDate,
+        isPaid: true,
+        paymentMethod: "Cash",
+      };
       client.subscriped = true;
       const subscriptionRecord = new Subscription({
         clientId: client._id,
         bundleName: bundle.bundleName,
         bundleId: bundle._id,
-        startingDate: startDate,
-        endingDate: endDate,
+        startingDate: localStartDate,
+        endingDate: localEndDate,
       });
       await subscriptionRecord.save();
       await client.save();
@@ -1747,6 +1758,7 @@ exports.getPrintMealsLabels = async (req, res, next) => {
       "clientStatus.paused": false,
       "subscripedBundle.isPaid": true,
     }).populate("subscripedBundle.bundleId");
+    console.log(clients);
     textDate = new Date(localDate).toDateString();
     let labels = [];
     for (let client of clients) {
@@ -2253,7 +2265,7 @@ exports.getReport = async (req, res, next) => {
           underline: true,
         });
       Doc.text("                                 ", { height: 50 });
-      reportElements.forEach(async (elem) => {
+      for (let elem of reportElements) {
         Doc.font(arFont)
           .fontSize(14)
           .text(`${utilities.textDirection(elem.bundleName)}  : الباقه  اسم`, {
@@ -2264,6 +2276,9 @@ exports.getReport = async (req, res, next) => {
           .text(`${elem.bundleNutrition}  : الغذائيه  القيمه`, {
             align: "right",
           });
+        let pageHeight = Doc.page.height;
+        let remainingHeight =
+          pageHeight - Number(elem.mealsTable.rows.length) * 40;
         await Doc.table(elem.mealsTable, {
           prepareHeader: () => Doc.font(arFont).fontSize(12),
           prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
@@ -2271,7 +2286,10 @@ exports.getReport = async (req, res, next) => {
             indexColumn === 0 && Doc.addBackground(rectRow, "white", 0.15);
           },
         });
-      });
+        if (remainingHeight < 100) {
+          Doc.addPage();
+        }
+      }
       Doc.end();
       let protocol;
       if (req.get("host").includes("localhost")) {
@@ -2334,7 +2352,6 @@ exports.getReport = async (req, res, next) => {
         );
         transactionsData.push(detail);
       }
-      console.log(transactionsData);
       const transactionsTable = {
         headers: [
           {
@@ -2602,14 +2619,19 @@ exports.getClientContract = async (req, res, next) => {
         [
           "Subscribtion Details",
           utilities.textDirection(
-            " باقة/  " +
-              client.subscripedBundle.bundleId.bundleName +
-              "  وجبات/ " +
+            " باقة/  " + client.subscripedBundle.bundleId.bundleName
+          ),
+          utilities.textDirection("تفاصيل الاشتراك"),
+        ],
+        [
+          "",
+          utilities.textDirection(
+            "  وجبات/ " +
               client.subscripedBundle.bundleId.mealsNumber +
               "  سناك/ " +
               client.subscripedBundle.bundleId.snacksNumber
           ),
-          utilities.textDirection("تفاصيل الاشتراك"),
+          "",
         ],
         [
           "Subscribtion Period",
@@ -2674,7 +2696,7 @@ exports.getClientContract = async (req, res, next) => {
         ],
         [
           "",
-          "                                                     ",
+          utilities.textDirection(client.dislikedMeals),
           utilities.textDirection("ملاحظات:"),
         ],
       ],

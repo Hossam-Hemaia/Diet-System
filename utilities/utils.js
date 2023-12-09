@@ -112,7 +112,6 @@ exports.fridayFilter = (startDate, endDate, fridayOption) => {
   if (filteredDates.length === 27) {
     filteredDates.pop();
   }
-  console.log(filteredDates);
   return filteredDates;
 };
 
@@ -150,6 +149,9 @@ exports.getEndActiveDate = (startDate, numberOfDays) => {
 };
 
 exports.textDirection = (str) => {
+  if (!str) {
+    return;
+  }
   const isEnglishLetters = /^[a-zA-Z0-9]+$/.test(str.split(" ").join(""));
   const isNumbers = /^[0-9]+$/.test(str.split(" ").join(""));
   if (isEnglishLetters || isNumbers) {
@@ -314,7 +316,7 @@ exports.activeClientsReport = async (clients) => {
     };
     const Doc = new PdfDoc({
       size: "A4",
-      margins: { top: 1, bottom: 30, left: 1, right: 1 },
+      margins: { top: 1, bottom: 1, left: 1, right: 1 },
       layout: "landscape",
     });
     Doc.pipe(fs.createWriteStream(reportPath));
@@ -326,6 +328,8 @@ exports.activeClientsReport = async (clients) => {
     Doc.font(arFont)
       .fontSize(18)
       .text(this.textDirection(`تقرير العملاء النشطين`), { align: "center" });
+    // let pageHeight = Doc.page.height;
+    // let remainingHeight = pageHeight - Number(clientsTable.rows.length) * 100;
     await Doc.table(clientsTable, {
       prepareHeader: () => Doc.font(arFont).fontSize(11),
       prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
@@ -333,6 +337,9 @@ exports.activeClientsReport = async (clients) => {
         indexColumn === 0 && Doc.addBackground(rectRow, "white", 0.15);
       },
     });
+    // if (remainingHeight < 100) {
+    //   Doc.addPage();
+    // }
     Doc.end();
     return reportName;
   } catch (err) {
