@@ -498,8 +498,7 @@ exports.getClientPlanDetails = async (req, res, next) => {
     await clientDetails.filterPlanDays(clientPlan._id);
     let bundle = await Bundle.findById(clientPlan.bundleId);
     const remainingDays = utilities.getRemainingDays(
-      clientPlan.startingDate,
-      clientPlan.endingDate
+      clientDetails.mealsPlan.meals
     );
     let originalPeriod = bundle.fridayOption
       ? bundle.bundlePeriod * 7
@@ -648,6 +647,7 @@ exports.getMenuMealByType = async (req, res, next) => {
   const mealType = req.query.mealType;
   const dateId = req.query.dateId;
   try {
+    console.log("getting menu222222...");
     const clientPlan = await Subscription.findOne({
       clientId: ObjectId(req.clientId),
     }).sort({ _id: -1 });

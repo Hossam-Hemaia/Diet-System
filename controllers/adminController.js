@@ -1171,10 +1171,7 @@ exports.getFindClient = async (req, res, next) => {
         endingDate: { $gte: futureDate },
       });
       if (clientPlan && client.subscriped) {
-        let remaining = utilities.getRemainingDays(
-          clientPlan.startingDate,
-          clientPlan.endingDate
-        );
+        let remaining = utilities.getRemainingDays(client.mealsPlan.meals);
         remainingDays.push(Math.floor(remaining));
       } else {
         remainingDays.push(0);
@@ -1234,10 +1231,7 @@ exports.getAllClients = async (req, res, next) => {
         endingDate: { $gte: futureDate },
       });
       if (clientPlan && client.subscriped) {
-        let remaining = utilities.getRemainingDays(
-          clientPlan.startingDate,
-          clientPlan.endingDate
-        );
+        let remaining = utilities.getRemainingDays(client.mealsPlan.meals);
         remainingDays.push(Math.floor(remaining));
       } else {
         remainingDays.push(0);
@@ -1315,7 +1309,10 @@ exports.postPauseClient = async (req, res, next) => {
     if (client.subscriped === true && client.clientStatus.numPause === 1) {
       client.subscriped = false;
       client.clientStatus.paused = true;
-      client.clientStatus.pauseDate = new Date();
+      client.clientStatus.pauseDate = utilities.getFutureDate(
+        new Date().setHours(0, 0, 0, 0),
+        24
+      );
       client.clientStatus.numPause = 0;
       await client.save();
       return res
@@ -1430,8 +1427,7 @@ exports.getClientPlanDetails = async (req, res, next) => {
     await clientDetails.filterPlanDays(clientPlan._id);
     let bundle = await Bundle.findById(clientPlan.bundleId);
     const remainingDays = utilities.getRemainingDays(
-      clientPlan.startingDate,
-      clientPlan.endingDate
+      clientDetails.mealsPlan.meals
     );
     let originalPeriod = bundle.fridayOption
       ? bundle.bundlePeriod * 7
@@ -2111,6 +2107,7 @@ exports.getReport = async (req, res, next) => {
           utilities.textDirection(client.subscripedBundle.bundleId.bundleName),
           client.phoneNumber,
           utilities.textDirection(client.clientName),
+          client.subscriptionId,
           index
         );
         clientsInfo.push(clientData);

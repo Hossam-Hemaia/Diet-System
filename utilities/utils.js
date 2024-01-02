@@ -115,20 +115,25 @@ exports.fridayFilter = (startDate, endDate, fridayOption) => {
   return filteredDates;
 };
 
-exports.getRemainingDays = (startDate, endDate) => {
-  const currentDate = Date.parse(new Date());
-  const parsedStartDate = Date.parse(startDate);
-  const parsedEndDate = Date.parse(endDate);
-  let remaining;
-  const periodThreshold =
-    currentDate > parsedStartDate ? currentDate : parsedStartDate;
-  if (parsedEndDate >= periodThreshold) {
-    remaining = parsedEndDate - periodThreshold;
-    const remainingDays = remaining / singleDay;
-    return remainingDays;
-  } else {
-    return 0;
+exports.getRemainingDays = (meals) => {
+  const currentDate = new Date().setHours(0, 0, 0, 0);
+  let remainingDays = 0;
+  for (let meal of meals) {
+    let parsedMealDate = Date.parse(meal.date);
+    if (parsedMealDate >= currentDate) {
+      ++remainingDays;
+    }
   }
+  return remainingDays;
+  // const parsedStartDate = Date.parse(startDate);
+  // const parsedEndDate = Date.parse(endDate);
+  // let remaining;
+  // const periodThreshold =
+  //   currentDate > parsedStartDate ? currentDate : parsedStartDate;
+  // if (parsedEndDate >= periodThreshold) {
+  //   remaining = parsedEndDate - periodThreshold;
+  //   const remainingDays = remaining / singleDay;
+  //   return remainingDays;
 };
 
 exports.checkValidity = (endDate) => {
@@ -260,38 +265,38 @@ exports.activeClientsReport = async (clients) => {
     const clientsTable = {
       headers: [
         {
-          label: this.textDirection("اطعمه محظوره"),
-          width: 90,
+          label: this.textDirection("اطعمه  محظوره"),
+          width: 120,
           align: "center",
           headerColor: "gray",
         },
         {
           label: this.textDirection("الايام  المتبقيه"),
-          width: 70,
+          width: 60,
           align: "center",
           headerColor: "gray",
         },
         {
           label: this.textDirection("نهاية  الاشتراك"),
-          width: 90,
+          width: 85,
           align: "center",
           headerColor: "gray",
         },
         {
           label: this.textDirection("بداية  الاشتراك"),
-          width: 90,
+          width: 85,
           align: "center",
           headerColor: "gray",
         },
         {
-          label: this.textDirection("عدد  الاسناكات"),
-          width: 70,
+          label: this.textDirection("الاسناكات"),
+          width: 40,
           align: "center",
           headerColor: "gray",
         },
         {
-          label: this.textDirection("عدد  الوجبات"),
-          width: 70,
+          label: this.textDirection("الوجبات"),
+          width: 40,
           align: "center",
           headerColor: "gray",
         },
@@ -301,12 +306,18 @@ exports.activeClientsReport = async (clients) => {
           align: "center",
           headerColor: "gray",
         },
-        { label: "الباقه", width: 70, align: "center", headerColor: "gray" },
+        { label: "الباقه", width: 100, align: "center", headerColor: "gray" },
         { label: "الهاتف", width: 70, align: "center", headerColor: "gray" },
         { label: "الاسم", width: 90, align: "center", headerColor: "gray" },
         {
-          label: "م",
+          label: "العضويه",
           width: 30,
+          align: "center",
+          headerColor: "gray",
+        },
+        {
+          label: "م",
+          width: 25,
           align: "center",
           headerColor: "gray",
           columnColor: "gray",
@@ -316,7 +327,7 @@ exports.activeClientsReport = async (clients) => {
     };
     const Doc = new PdfDoc({
       size: "A4",
-      margins: { top: 1, bottom: 1, left: 1, right: 1 },
+      margins: { top: 1, bottom: 15, left: 1, right: 1 },
       layout: "landscape",
     });
     Doc.pipe(fs.createWriteStream(reportPath));
@@ -331,9 +342,9 @@ exports.activeClientsReport = async (clients) => {
     // let pageHeight = Doc.page.height;
     // let remainingHeight = pageHeight - Number(clientsTable.rows.length) * 100;
     await Doc.table(clientsTable, {
-      prepareHeader: () => Doc.font(arFont).fontSize(11),
+      prepareHeader: () => Doc.font(arFont).fontSize(9),
       prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-        Doc.font(arFont).fontSize(11);
+        Doc.font(arFont).fontSize(9);
         indexColumn === 0 && Doc.addBackground(rectRow, "white", 0.15);
       },
     });
