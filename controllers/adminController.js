@@ -2085,12 +2085,7 @@ exports.getReport = async (req, res, next) => {
         let clientData = [];
         clientData.push(
           utilities.textDirection(client.dislikedMeals),
-          Math.floor(
-            utilities.getRemainingDays(
-              client.subscripedBundle.startingDate,
-              client.subscripedBundle.endingDate
-            )
-          ),
+          Math.floor(utilities.getRemainingDays(client.mealsPlan.meals)),
           client.subscripedBundle.endingDate.toLocaleDateString("en-GB", {
             day: "2-digit",
             month: "2-digit",
