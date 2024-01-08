@@ -177,18 +177,25 @@ exports.postSubscripe = async (req, res, next) => {
         endDate,
         bundle.fridayOption
       );
+      let nowStart = new Date(dates[0]);
+      let localStartDate = new Date(
+        nowStart.getTime() - nowStart.getTimezoneOffset() * 60000
+      );
+      let nowEnd = new Date(dates[dates.length - 1]);
+      let localEndDate = new Date(
+        nowEnd.getTime() - nowEnd.getTimezoneOffset() * 60000
+      );
       if (!renewFlag) {
-        let nowStart = new Date(dates[0]);
-        let localStartDate = new Date(
-          nowStart.getTime() - nowStart.getTimezoneOffset() * 60000
-        );
-        let nowEnd = new Date(dates[dates.length - 1]);
-        let localEndDate = new Date(
-          nowEnd.getTime() - nowEnd.getTimezoneOffset() * 60000
-        );
         client.subscripedBundle = {
           bundleId: bundle._id,
           startingDate: localStartDate,
+          endingDate: localEndDate,
+          isPaid: true,
+        };
+      } else if (renewFlag) {
+        client.subscripedBundle = {
+          bundleId: bundle._id,
+          startingDate: client.mealsPlan.meals[0].date,
           endingDate: localEndDate,
           isPaid: true,
         };
@@ -198,8 +205,8 @@ exports.postSubscripe = async (req, res, next) => {
         clientId: client._id,
         bundleName: bundle.bundleName,
         bundleId: bundle._id,
-        startingDate: dates[0],
-        endingDate: dates[dates.length - 1],
+        startingDate: localStartDate,
+        endingDate: localEndDate,
       });
       await subscriptionRecord.save();
       await client.save();
@@ -344,11 +351,11 @@ exports.postSelectMeal = async (req, res, next) => {
   }
 };
 
-exports.addChiffMeals = async (date) => {
+exports.addChiffMeals = async (date, duration) => {
   try {
     console.log("adding chiff meals...");
     const isoDate = new Date(date);
-    const futureDate = new Date(isoDate.getTime() + 48 * 60 * 60 * 1000);
+    const futureDate = new Date(isoDate.getTime() + duration * 60 * 60 * 1000);
     const localDate = new Date(
       futureDate.getTime() - futureDate.getTimezoneOffset() * 60000
     ).toISOString();
@@ -363,7 +370,7 @@ exports.addChiffMeals = async (date) => {
     if (clients.length <= 0) {
       return;
     } else {
-      console.log("clients not select meals: " + clients.length);
+      console.log("clients not select meals: " + clients);
     }
     let chiffMenuMeals = [];
     for (let menu of chiffMenu.menu) {

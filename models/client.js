@@ -271,8 +271,10 @@ clientSchema.methods.addMealsDates = function (
   if (renewFlag) {
     mealsDates = [];
     for (let date of dates) {
+      let now = new Date(date);
+      let localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
       mealsDates.push({
-        date,
+        date: localDate,
         dayMeals: [],
         mealsNumber: bundle.mealsNumber,
         snacksNumber: bundle.snacksNumber,

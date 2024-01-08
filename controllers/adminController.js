@@ -1334,7 +1334,7 @@ exports.postPauseClient = async (req, res, next) => {
 exports.postActivateClient = async (req, res, next) => {
   const clientId = req.body.clientId;
   try {
-    const activationDate = new Date().setHours(2, 0, 1, 1);
+    const activationDate = new Date().setHours(0, 0, 0, 0);
     const client = await Client.findById(clientId);
     const clientPlan = await Subscription.findOne({
       clientId: ObjectId(client._id),
@@ -1342,16 +1342,17 @@ exports.postActivateClient = async (req, res, next) => {
     if (client.clientStatus.paused) {
       const pauseDate = client.clientStatus.pauseDate;
       const bundle = await Bundle.findById(client.subscripedBundle.bundleId);
-      const endPlanDate =
-        client.mealsPlan.meals[client.mealsPlan.meals.length - 1].date;
+      const endPlanDate = Date.parse(
+        client.mealsPlan.meals[client.mealsPlan.meals.length - 1].date
+      );
       const thresholdDate =
         endPlanDate >= activationDate ? activationDate : endPlanDate;
       const filteredDates = utilities.fridayFilter(
-        pauseDate.setHours(2, 0, 1, 1),
-        new Date(thresholdDate).setHours(2, 0, 1, 1),
+        pauseDate,
+        new Date(thresholdDate),
         bundle.fridayOption
       );
-      let numberOfPauseDays = filteredDates.length - 1;
+      let numberOfPauseDays = filteredDates.length;
       if (req.clientId && numberOfPauseDays > 30) {
         const error = new Error("لقد تجاوزت مدة الايقاف المسموح بها!");
         error.statusCode = 403;
@@ -1498,7 +1499,6 @@ exports.postRenewSubscription = async (req, res, next) => {
           bundle.bundleOffer
         );
       }
-
       const dates = utilities.fridayFilter(
         startDate,
         endDate,
@@ -1512,13 +1512,22 @@ exports.postRenewSubscription = async (req, res, next) => {
       let localEndDate = new Date(
         nowEnd.getTime() - nowEnd.getTimezoneOffset() * 60000
       );
-      client.subscripedBundle = {
-        bundleId: bundle._id,
-        startingDate: localStartDate,
-        endingDate: localEndDate,
-        isPaid: true,
-        paymentMethod: "Cash",
-      };
+      if (!renewFlag) {
+        client.subscripedBundle = {
+          bundleId: bundle._id,
+          startingDate: localStartDate,
+          endingDate: localEndDate,
+          isPaid: true,
+          paymentMethod: "Cash",
+        };
+      } else if (renewFlag) {
+        client.subscripedBundle = {
+          bundleId: bundle._id,
+          startingDate: client.mealsPlan.meals[0].date,
+          endingDate: localEndDate,
+          isPaid: true,
+        };
+      }
       client.subscriped = true;
       const subscriptionRecord = new Subscription({
         clientId: client._id,
